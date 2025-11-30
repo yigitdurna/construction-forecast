@@ -1,5 +1,5 @@
 import { useState, FormEvent } from 'react'
-import { ProjectInputs, ProjectType } from '../types'
+import { ProjectInputs, ProjectType, ParameterOverrides } from '../types'
 import { getDefaultConstructionDuration } from '../utils/calculations'
 import { getAllLocationNames, getLocationData } from '../data/antalyaLocations'
 import { formatNumber } from '../utils/calculations'
@@ -7,12 +7,8 @@ import { getCostParametersForQuality } from '../data/costParameterDefaults'
 
 interface ProjectFormProps {
   onCalculate: (inputs: ProjectInputs) => void
-  onParameterChange?: (type: 'timeline' | 'cost' | 'sales', key: string, value: any) => void
-  parameterOverrides?: {
-    timeline?: any;
-    cost?: Record<string, number>;
-    sales?: Record<string, number>;
-  }
+  onParameterChange?: (type: 'timeline' | 'cost' | 'sales', key: string, value: number | string | undefined | null) => void
+  parameterOverrides?: ParameterOverrides
 }
 
 export function ProjectForm({ onCalculate, onParameterChange, parameterOverrides }: ProjectFormProps) {
@@ -190,6 +186,8 @@ export function ProjectForm({ onCalculate, onParameterChange, parameterOverrides
               type="button"
               onClick={() => setShowAdvancedParameters(!showAdvancedParameters)}
               className="flex items-center justify-between w-full text-left text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors"
+              aria-expanded={showAdvancedParameters}
+              aria-controls="advanced-parameters-section"
             >
               <span className="flex items-center gap-2">
                 ⚙️ Gelişmiş Parametreler
@@ -199,7 +197,12 @@ export function ProjectForm({ onCalculate, onParameterChange, parameterOverrides
             </button>
 
             {showAdvancedParameters && (
-              <div className="bg-gray-50 rounded-lg p-6 space-y-6 border border-gray-200 mt-4">
+              <div
+                id="advanced-parameters-section"
+                className="bg-gray-50 rounded-lg p-6 space-y-6 border border-gray-200 mt-4"
+                role="region"
+                aria-label="Gelişmiş Parametreler Bölümü"
+              >
                 <div className="bg-blue-50 border border-blue-200 rounded-md p-3 mb-4">
                   <p className="text-xs text-blue-700">
                     💡 Bu parametreler boş bırakılırsa varsayılan değerler kullanılır.

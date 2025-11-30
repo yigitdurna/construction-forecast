@@ -176,3 +176,38 @@ export interface UnitMixConfig {
   averageUnitSize: number
   totalEstimatedRevenue: number
 }
+
+// Parameter override types for type-safe parameter management
+export interface TimelineOverrides {
+  startDate?: string
+  landSize?: number
+  landCost?: number
+  constructionMonths?: number
+  monthsToSell?: number
+  monthlyInflationRate?: number
+  monthlyAppreciationRate?: number
+  costDistribution?: CostDistribution
+  // Allow dynamic indexing for flexibility (null for clearing values)
+  [key: string]: string | number | CostDistribution | undefined | null
+}
+
+export interface ParameterOverrides {
+  timeline?: TimelineOverrides
+  cost?: Record<string, number>
+  sales?: Record<string, number>
+}
+
+// Calculation result types (success or error)
+export interface CalculationSuccess {
+  success: true
+  data: CalculationResults
+}
+
+export interface CalculationError {
+  success: false
+  error: string
+  errorTR: string
+  details?: string[]
+}
+
+export type CalculationResult = CalculationSuccess | CalculationError

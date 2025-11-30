@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import DatePicker from 'react-datepicker';
-import { CalculationResults } from '../types';
+import { CalculationResults, ParameterOverrides } from '../types';
 import { formatCurrency, formatPercentage, formatNumber } from '../utils/calculations';
 import { ParametersPanel } from './ParametersPanel';
 import { UnitMixEditor } from './UnitMixEditor';
@@ -12,20 +12,16 @@ import { getLocationData, calculateMarketIndex } from '../data/antalyaLocations'
 interface ResultsViewProps {
   results: CalculationResults;
   onReset: () => void;
-  onParameterChange?: (type: 'timeline' | 'cost' | 'sales', key: string, value: any) => void;
-  parameterOverrides?: {
-    timeline?: any;
-    cost?: Record<string, number>;
-    sales?: Record<string, number>;
-  };
+  onParameterChange?: (type: 'timeline' | 'cost' | 'sales', key: string, value: number | string | undefined | null) => void;
+  parameterOverrides?: ParameterOverrides;
 }
 
 export function ResultsView({ results, onReset, onParameterChange, parameterOverrides }: ResultsViewProps) {
   const { inputs, timeline, costs, sales, profit } = results;
   const [showDetailedMode, setShowDetailedMode] = useState(false);
 
-  // Calculate scenarios
-  const scenarios = calculateAllScenarios(results);
+  // Calculate scenarios with memoization to prevent unnecessary recalculations
+  const scenarios = useMemo(() => calculateAllScenarios(results), [results]);
 
   // Get parameter states
   const costParameters = getCostParametersForQuality(inputs.qualityLevel, parameterOverrides?.cost || {});
@@ -140,7 +136,11 @@ export function ResultsView({ results, onReset, onParameterChange, parameterOver
           </div>
           <div>
             <span className="text-gray-500 text-xs">m² Maliyet</span>
-            <p className="font-medium">{formatCurrency(costs.totalInflatedCost / inputs.totalSqm)}</p>
+            <p className="font-medium">
+              {inputs.totalSqm > 0
+                ? formatCurrency(costs.totalInflatedCost / inputs.totalSqm)
+                : 'N/A'}
+            </p>
           </div>
           <div>
             <span className="text-gray-500 text-xs">m² Satış</span>

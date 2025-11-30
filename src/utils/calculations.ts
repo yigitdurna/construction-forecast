@@ -15,19 +15,37 @@ import {
 import { getDefaultParameters } from '../data/parameterDefaults'
 import { getSalesParametersForLocation, calculateSalesPriceFromParameters } from '../data/salesParameterDefaults'
 import { getCostParametersForQuality, calculateTotalCostFromParameters } from '../data/costParameterDefaults'
+import { validateProjectInputs } from './validation'
+import {
+  NET_TO_GROSS_RATIO,
+  S_CURVE_STEEPNESS,
+  S_CURVE_MIDPOINT,
+  DEFAULT_MONTHLY_INFLATION_RATE,
+  DEFAULT_MONTHLY_APPRECIATION_RATE,
+  DEFAULT_MONTHLY_DISCOUNT_RATE,
+  DEFAULT_MONTHS_TO_SELL,
+  CONSTRUCTION_DURATION,
+  SIZE_THRESHOLDS,
+} from '../constants'
 
 /**
  * Get default construction duration based on project type and size
  */
 export function getDefaultConstructionDuration(projectType: string, totalSqm: number): number {
   if (projectType === 'villa') {
-    return totalSqm < 500 ? 10 : 14
+    return totalSqm < SIZE_THRESHOLDS.VILLA_SMALL_MAX
+      ? CONSTRUCTION_DURATION.VILLA_SMALL
+      : CONSTRUCTION_DURATION.VILLA_LARGE
   }
 
   // Apartment building
-  if (totalSqm < 3000) return 14
-  if (totalSqm < 8000) return 18
-  return 24
+  if (totalSqm < SIZE_THRESHOLDS.APARTMENT_SMALL_MAX) {
+    return CONSTRUCTION_DURATION.APARTMENT_SMALL
+  }
+  if (totalSqm < SIZE_THRESHOLDS.APARTMENT_MEDIUM_MAX) {
+    return CONSTRUCTION_DURATION.APARTMENT_MEDIUM
+  }
+  return CONSTRUCTION_DURATION.APARTMENT_LARGE
 }
 
 /**
@@ -35,16 +53,21 @@ export function getDefaultConstructionDuration(projectType: string, totalSqm: nu
  * Returns array of percentages (sum = 1.0) for each month
  */
 export function generateSCurveDistribution(totalMonths: number): number[] {
+  // Safety check: prevent division by zero
+  if (totalMonths <= 0 || !isFinite(totalMonths)) {
+    throw new Error(`Invalid construction duration: ${totalMonths} months. Must be positive and finite.`)
+  }
+
   const distribution: number[] = []
 
   for (let month = 1; month <= totalMonths; month++) {
     // Logistic S-curve: cumulative progress at this month
     const t = month / totalMonths
-    const scurveValue = 1 / (1 + Math.exp(-10 * (t - 0.5)))
+    const scurveValue = 1 / (1 + Math.exp(-S_CURVE_STEEPNESS * (t - S_CURVE_MIDPOINT)))
 
     // Get previous cumulative value
     const tPrev = (month - 1) / totalMonths
-    const scurvePrev = month === 1 ? 0 : 1 / (1 + Math.exp(-10 * (tPrev - 0.5)))
+    const scurvePrev = month === 1 ? 0 : 1 / (1 + Math.exp(-S_CURVE_STEEPNESS * (tPrev - S_CURVE_MIDPOINT)))
 
     // Monthly increment is difference between cumulative values
     const monthlyPercent = scurveValue - scurvePrev
@@ -131,8 +154,8 @@ export function calculateInflationAdjustedCosts(
  * The discount rate should be LOWER than inflation because:
  * - Real estate provides inflation protection
  * - The asset appreciates while you wait
+ * Note: DEFAULT_MONTHLY_DISCOUNT_RATE is now imported from constants.ts
  */
-export const DEFAULT_MONTHLY_DISCOUNT_RATE = 0.01; // 1.0% monthly = ~12.7% annual
 
 /**
  * Calculate future sales price with appreciation AND time value of money
@@ -246,7 +269,7 @@ function calculateCosts(
 ): CostBreakdown {
   // Always use the detailed parameter system
   const costParams = getCostParametersForQuality(inputs.qualityLevel, costOverrides || {});
-  const netSqm = inputs.totalSqm * 0.85; // Assume 85% net-to-gross ratio
+  const netSqm = inputs.totalSqm * NET_TO_GROSS_RATIO;
   const numUnits = Math.max(1, Math.floor(inputs.totalSqm / AVERAGE_UNIT_SIZES[inputs.projectType]));
   
   // Use land size from inputs for foundation/landscaping calculations
@@ -367,25 +390,36 @@ function calculateSales(
 }
 
 /**
+ * Safe division helper to prevent NaN/Infinity
+ */
+function safeDivide(numerator: number, denominator: number, defaultValue: number = 0): number {
+  if (!isFinite(numerator) || !isFinite(denominator) || denominator === 0) {
+    return defaultValue
+  }
+  const result = numerator / denominator
+  return isFinite(result) ? result : defaultValue
+}
+
+/**
  * Calculate profit metrics (gross profit, margin, ROI)
  */
 function calculateProfit(costs: CostBreakdown, sales: SalesProjection): ProfitSummary {
   // Scenario 1: Nominal (no time value - instant build and sell)
   const nominalProfit = sales.currentTotalSales - costs.totalNominalCost
-  const nominalROI = (nominalProfit / costs.totalNominalCost) * 100
-  const nominalMargin = (nominalProfit / sales.currentTotalSales) * 100
+  const nominalROI = safeDivide(nominalProfit, costs.totalNominalCost, 0) * 100
+  const nominalMargin = safeDivide(nominalProfit, sales.currentTotalSales, 0) * 100
 
   // Scenario 2: Time-adjusted NPV (realistic - inflated costs, NPV-adjusted sales)
   // CRITICAL FIX: Use npvAdjustedSales instead of projectedTotalSales
   // This accounts for time value of money - longer waits now correctly reduce profit
   const projectedProfit = sales.npvAdjustedSales - costs.totalInflatedCost
-  const projectedROI = (projectedProfit / costs.totalInflatedCost) * 100
-  const projectedMargin = (projectedProfit / sales.npvAdjustedSales) * 100
+  const projectedROI = safeDivide(projectedProfit, costs.totalInflatedCost, 0) * 100
+  const projectedMargin = safeDivide(projectedProfit, sales.npvAdjustedSales, 0) * 100
 
   // Scenario 3: Pessimistic (inflated costs, no appreciation)
   const pessimisticProfit = sales.currentTotalSales - costs.totalInflatedCost
-  const pessimisticROI = (pessimisticProfit / costs.totalInflatedCost) * 100
-  const pessimisticMargin = (pessimisticProfit / sales.currentTotalSales) * 100
+  const pessimisticROI = safeDivide(pessimisticProfit, costs.totalInflatedCost, 0) * 100
+  const pessimisticMargin = safeDivide(pessimisticProfit, sales.currentTotalSales, 0) * 100
 
   return {
     nominalProfit,
@@ -414,13 +448,20 @@ export function calculateProjectCosts(
     sales?: Record<string, number>;
   }
 ): CalculationResults {
+  // Validate inputs before calculations
+  const validation = validateProjectInputs(inputs)
+  if (!validation.isValid) {
+    const errorMessages = validation.errors.map(e => e.messageTR).join('; ')
+    throw new Error(`Geçersiz giriş değerleri: ${errorMessages}`)
+  }
+
   // Get defaults for optional inputs
   const constructionMonths = inputs.constructionMonths ??
     getDefaultConstructionDuration(inputs.projectType, inputs.totalSqm);
   const costDistribution = inputs.costDistribution ?? 'scurve';
-  const monthlyInflationRate = inputs.monthlyInflationRate ?? 0.025; // 2.5% default
-  const monthlyAppreciationRate = inputs.monthlyAppreciationRate ?? 0.015; // 1.5% default
-  const monthsToSell = inputs.monthsToSellAfterCompletion ?? 6; // 6 months default
+  const monthlyInflationRate = inputs.monthlyInflationRate ?? DEFAULT_MONTHLY_INFLATION_RATE;
+  const monthlyAppreciationRate = inputs.monthlyAppreciationRate ?? DEFAULT_MONTHLY_APPRECIATION_RATE;
+  const monthsToSell = inputs.monthsToSellAfterCompletion ?? DEFAULT_MONTHS_TO_SELL;
   
   // NPV discount rate - opportunity cost of capital
   // Default: 1% monthly (~12.7% annual) - lower than inflation because real estate provides inflation protection

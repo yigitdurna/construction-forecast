@@ -2,8 +2,8 @@ import { CalculationResults } from '../types';
 import {
   calculateInflationAdjustedCosts,
   calculateFutureSalesPrice,
-  DEFAULT_MONTHLY_DISCOUNT_RATE
 } from '../utils/calculations';
+import { DEFAULT_MONTHLY_DISCOUNT_RATE } from '../constants';
 
 export interface ScenarioConfig {
   name: 'optimistic' | 'realistic' | 'pessimistic';
