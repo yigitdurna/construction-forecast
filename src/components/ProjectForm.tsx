@@ -279,7 +279,7 @@ export function ProjectForm({ onCalculate, onParameterChange, parameterOverrides
                   <h4 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
                     📅 Zaman ve Süre
                   </h4>
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <label htmlFor="globalConstructionMonths" className="block text-sm font-medium text-gray-700 mb-1">
                         İnşaat Süresi (Ay)
@@ -321,7 +321,7 @@ export function ProjectForm({ onCalculate, onParameterChange, parameterOverrides
                   <h4 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
                     📈 Ekonomik Oranlar
                   </h4>
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <label htmlFor="globalInflationRate" className="block text-sm font-medium text-gray-700 mb-1">
                         Aylık Enflasyon (%)
@@ -381,7 +381,7 @@ export function ProjectForm({ onCalculate, onParameterChange, parameterOverrides
                           <h5 className="text-xs font-medium text-gray-600 mb-2 flex items-center gap-1">
                             {categoryInfo.icon} {categoryInfo.label}
                           </h5>
-                          <div className="grid grid-cols-2 gap-2">
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                             {params.map(param => {
                               const range = param.rangeByQuality[formData.qualityLevel]
                               const isOverridden = parameterOverrides?.cost?.[param.id] !== undefined

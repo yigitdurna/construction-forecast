@@ -95,7 +95,7 @@ export function ResultsView({ results, onReset, onParameterChange, parameterOver
         </div>
 
         {/* Key Metrics Row */}
-        <div className="grid grid-cols-4 gap-4 pt-4 border-t border-gray-200">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-4 border-t border-gray-200">
           <div className="text-center">
             <p className="text-xs text-gray-500">Maliyet</p>
             <p className="text-lg font-semibold text-red-600">{formatCurrency(costs.totalInflatedCost)}</p>
@@ -152,7 +152,7 @@ export function ResultsView({ results, onReset, onParameterChange, parameterOver
       {/* 3 Scenarios - Quick Comparison */}
       <div className="bg-white rounded-lg shadow p-4">
         <h3 className="text-sm font-semibold text-gray-700 mb-3">Senaryo Karşılaştırması</h3>
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           {scenarios.map((scenario) => (
             <div
               key={scenario.scenario}
@@ -284,7 +284,7 @@ function TimelineSection({
     <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border-2 border-blue-200 p-6">
       <h3 className="text-lg font-semibold text-gray-800 mb-4">Proje Zaman Çizelgesi</h3>
 
-      <div className="grid grid-cols-3 gap-4 mb-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
         <div className="bg-white rounded-lg p-3 border border-blue-200">
           <label className="text-xs text-gray-600 block mb-1">Başlangıç</label>
           <DatePicker
@@ -400,7 +400,7 @@ function MarketIndexSection({ location }: { location: string }) {
           {marketIndex}/100
         </div>
       </div>
-      <div className="grid grid-cols-4 gap-2 mt-3 text-xs">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mt-3 text-xs">
         <div className="bg-white rounded p-2 text-center">
           <span className="text-gray-500 block">Talep</span>
           <span className="text-lg">{demandIndicator.icon}</span>
