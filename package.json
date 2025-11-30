@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.1.0",
   "type": "module",
-  "homepage": "https://yigidurna.github.io/construction-forecast",
+  "homepage": "https://yigitdurna.github.io/construction-forecast",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",

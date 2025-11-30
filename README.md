@@ -4,7 +4,7 @@ A sophisticated web application for construction companies in Antalya, Turkey to
 
 ## Live Demo
 
-🚀 **[View Live Application](https://yigidurna.github.io/construction-forecast/)**
+🚀 **[View Live Application](https://yigitdurna.github.io/construction-forecast/)**
 
 ## Features
 
