@@ -1,0 +1,237 @@
+{
+  "metadata": {
+    "version": "1.0.0",
+    "lastUpdated": "2024-12-01",
+    "region": "Antalya, Turkey",
+    "currency": "TRY",
+    "notes": "All prices are estimates for the Antalya region as of December 2024. Prices should be updated quarterly for accuracy."
+  },
+  "constructionCosts": {
+    "dataSource": "Turkish Construction Industry Average Rates 2024",
+    "lastUpdated": "2024-12-01",
+    "confidenceLevel": "medium",
+    "updateFrequency": "quarterly",
+    "notes": "Based on industry surveys and contractor quotes. Luxury tier prices.",
+    "pricePerSqm": {
+      "standard": {
+        "value": 8000,
+        "min": 6000,
+        "max": 10000,
+        "source": "Market survey - basic construction"
+      },
+      "mid": {
+        "value": 12000,
+        "min": 10000,
+        "max": 14000,
+        "source": "Market survey - mid-range finishes"
+      },
+      "luxury": {
+        "value": 18000,
+        "min": 15000,
+        "max": 22000,
+        "source": "Market survey - high-end finishes"
+      }
+    }
+  },
+  "landPrices": {
+    "dataSource": "Antalya Real Estate Market Data & Municipality Records",
+    "lastUpdated": "2024-11-15",
+    "confidenceLevel": "high",
+    "updateFrequency": "monthly",
+    "notes": "Prices vary significantly by district. Central locations command premium.",
+    "districtPrices": {
+      "default": {
+        "pricePerSqm": 5000,
+        "source": "Regional average",
+        "lastUpdated": "2024-11-15"
+      },
+      "merkez": {
+        "pricePerSqm": 7000,
+        "source": "Municipality records + market sales",
+        "lastUpdated": "2024-11-15"
+      },
+      "konyaaltı": {
+        "pricePerSqm": 8000,
+        "source": "Municipality records + market sales",
+        "lastUpdated": "2024-11-10"
+      },
+      "lara": {
+        "pricePerSqm": 6500,
+        "source": "Municipality records + market sales",
+        "lastUpdated": "2024-11-15"
+      },
+      "kepez": {
+        "pricePerSqm": 4500,
+        "source": "Municipality records + market sales",
+        "lastUpdated": "2024-11-01"
+      },
+      "aksu": {
+        "pricePerSqm": 4000,
+        "source": "Municipality records + market sales",
+        "lastUpdated": "2024-10-20"
+      }
+    }
+  },
+  "salesPrices": {
+    "dataSource": "Antalya Real Estate Listings & Sales Records",
+    "lastUpdated": "2024-11-20",
+    "confidenceLevel": "medium",
+    "updateFrequency": "monthly",
+    "notes": "Based on actual listing prices and completed sales. Luxury tier baseline.",
+    "pricePerSqm": {
+      "apartment": {
+        "standard": {
+          "value": 35000,
+          "min": 28000,
+          "max": 42000,
+          "source": "Sahibinden.com & Hürriyet Emlak listings"
+        },
+        "mid": {
+          "value": 50000,
+          "min": 42000,
+          "max": 58000,
+          "source": "Sahibinden.com & Hürriyet Emlak listings"
+        },
+        "luxury": {
+          "value": 75000,
+          "min": 65000,
+          "max": 90000,
+          "source": "Sahibinden.com & Hürriyet Emlak listings"
+        }
+      },
+      "villa": {
+        "standard": {
+          "value": 40000,
+          "min": 32000,
+          "max": 48000,
+          "source": "Sahibinden.com & Hürriyet Emlak listings"
+        },
+        "mid": {
+          "value": 60000,
+          "min": 50000,
+          "max": 70000,
+          "source": "Sahibinden.com & Hürriyet Emlak listings"
+        },
+        "luxury": {
+          "value": 100000,
+          "min": 85000,
+          "max": 125000,
+          "source": "Sahibinden.com & Hürriyet Emlak listings"
+        }
+      },
+      "mixed": {
+        "standard": {
+          "value": 37000,
+          "min": 30000,
+          "max": 45000,
+          "source": "Calculated average of apartment & villa"
+        },
+        "mid": {
+          "value": 55000,
+          "min": 46000,
+          "max": 64000,
+          "source": "Calculated average of apartment & villa"
+        },
+        "luxury": {
+          "value": 85000,
+          "min": 72000,
+          "max": 105000,
+          "source": "Calculated average of apartment & villa"
+        }
+      }
+    }
+  },
+  "economicIndicators": {
+    "inflation": {
+      "monthly": {
+        "value": 0.025,
+        "annualized": 0.344,
+        "source": "TÜİK (Turkish Statistical Institute)",
+        "lastUpdated": "2024-11-01",
+        "confidenceLevel": "high",
+        "notes": "Construction sector specific inflation. 2.5% monthly = ~34% annual."
+      }
+    },
+    "propertyAppreciation": {
+      "monthly": {
+        "value": 0.015,
+        "annualized": 0.196,
+        "source": "REIDIN Turkey Real Estate Index + Antalya market trends",
+        "lastUpdated": "2024-11-01",
+        "confidenceLevel": "medium",
+        "notes": "Antalya luxury segment. 1.5% monthly = ~20% annual."
+      }
+    }
+  },
+  "costMultipliers": {
+    "dataSource": "Industry standard percentages",
+    "lastUpdated": "2024-12-01",
+    "confidenceLevel": "high",
+    "updateFrequency": "annually",
+    "values": {
+      "permitsAndFees": {
+        "value": 0.08,
+        "description": "Building permits, municipality fees, environmental assessments",
+        "source": "Turkish Ministry of Environment regulations"
+      },
+      "designFees": {
+        "value": 0.05,
+        "description": "Architect, structural engineer, MEP engineer fees",
+        "source": "Turkish Chamber of Architects standard fees"
+      },
+      "contingency": {
+        "value": 0.10,
+        "description": "Risk buffer for unexpected costs and scope changes",
+        "source": "Industry best practice"
+      }
+    }
+  },
+  "salesMultipliers": {
+    "dataSource": "Market analysis and location scoring",
+    "lastUpdated": "2024-11-15",
+    "confidenceLevel": "medium",
+    "values": {
+      "locationPremium": {
+        "default": 1.0,
+        "beachfront": 1.5,
+        "cityCenter": 1.15,
+        "suburb": 0.9,
+        "description": "Premium based on location desirability",
+        "source": "Comparative market analysis"
+      },
+      "amenityPremium": {
+        "none": 0,
+        "basic": 3,
+        "standard": 5,
+        "luxury": 10,
+        "description": "Additional value from amenities (pool, gym, security, etc.)",
+        "source": "Sales data comparison with/without amenities"
+      },
+      "marketCondition": {
+        "bearish": 0.85,
+        "normal": 1.0,
+        "bullish": 1.15,
+        "description": "Current market sentiment multiplier",
+        "source": "Market trend analysis",
+        "currentCondition": "normal"
+      }
+    }
+  },
+  "dataQuality": {
+    "overallConfidence": "medium",
+    "lastComprehensiveReview": "2024-12-01",
+    "nextScheduledUpdate": "2025-03-01",
+    "dataGaps": [
+      "Need more granular district-level sales data",
+      "Limited historical trend data for appreciation rates",
+      "Contractor margin data needs verification"
+    ],
+    "recommendations": [
+      "Update land prices monthly using municipality sales records",
+      "Verify construction costs with at least 3 contractor quotes quarterly",
+      "Track actual project costs vs estimates for calibration",
+      "Monitor TÜİK monthly inflation reports",
+      "Review REIDIN index monthly for property appreciation trends"
+    ]
+  }
+}
