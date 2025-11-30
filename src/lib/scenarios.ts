@@ -1,9 +1,8 @@
-import { CalculationResults, ProjectInputs } from '../types';
-import { 
-  calculateProjectCosts, 
-  calculateInflationAdjustedCosts, 
+import { CalculationResults } from '../types';
+import {
+  calculateInflationAdjustedCosts,
   calculateFutureSalesPrice,
-  DEFAULT_MONTHLY_DISCOUNT_RATE 
+  DEFAULT_MONTHLY_DISCOUNT_RATE
 } from '../utils/calculations';
 
 export interface ScenarioConfig {

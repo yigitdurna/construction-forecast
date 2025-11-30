@@ -8,8 +8,8 @@
  */
 
 import { useState, useEffect, useMemo } from 'react';
-import { ProjectType, UnitMixConfig, UnitMix } from '../types';
-import { getUnitTypesForProject, UnitTypeData } from '../data/unitTypes';
+import { ProjectType, UnitMixConfig } from '../types';
+import { getUnitTypesForProject } from '../data/unitTypes';
 import { 
   calculateOptimalUnitMix, 
   calculateCustomUnitMix, 

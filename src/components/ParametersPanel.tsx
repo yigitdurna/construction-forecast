@@ -385,7 +385,7 @@ function SalesParameterRow({
 function CostCategorySection({
   title,
   icon,
-  sectionKey,
+  sectionKey: _sectionKey,
   isExpanded,
   onToggle,
   parameters,
@@ -402,9 +402,6 @@ function CostCategorySection({
   onParameterChange: (id: string, value: number | null) => void;
 }) {
   if (parameters.length === 0) return null;
-
-  // Calculate category total
-  const categoryTotal = parameters.reduce((sum, p) => sum + p.effectiveValue, 0);
 
   return (
     <div className="p-4">

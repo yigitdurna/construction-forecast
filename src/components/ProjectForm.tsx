@@ -60,7 +60,6 @@ export function ProjectForm({ onCalculate, onParameterChange, parameterOverrides
   const currentLandSize = parameterOverrides?.timeline?.landSize ?? formData.landSize
   const directLandCost = parameterOverrides?.timeline?.landCost
   const calculatedLandCost = currentLandSize > 0 ? currentLandSize * landPricePerSqm : 0
-  const effectiveLandCost = directLandCost !== undefined && directLandCost > 0 ? directLandCost : calculatedLandCost
 
   // Get cost parameters for display
   const costParameters = getCostParametersForQuality(formData.qualityLevel, parameterOverrides?.cost || {})

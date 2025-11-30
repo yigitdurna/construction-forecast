@@ -4,7 +4,7 @@ import { CalculationResults } from '../types';
 import { formatCurrency, formatPercentage, formatNumber } from '../utils/calculations';
 import { ParametersPanel } from './ParametersPanel';
 import { UnitMixEditor } from './UnitMixEditor';
-import { calculateAllScenarios, ScenarioResult } from '../lib/scenarios';
+import { calculateAllScenarios } from '../lib/scenarios';
 import { getCostParametersForQuality } from '../data/costParameterDefaults';
 import { getSalesParameters } from '../data/salesParameterDefaults';
 import { getLocationData, calculateMarketIndex } from '../data/antalyaLocations';

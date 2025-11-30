@@ -53,7 +53,7 @@ export function getConstructionCostWithSource(quality: 'standard' | 'mid' | 'lux
 export function getLandPriceWithSource(location: string): DataSourceInfo {
   const landData = dataConfig.landPrices;
   const normalizedLocation = location.toLowerCase().trim();
-  const districtData = landData.districtPrices[normalizedLocation] || landData.districtPrices.default;
+  const districtData = landData.districtPrices[normalizedLocation as keyof typeof landData.districtPrices] || landData.districtPrices.default;
 
   return {
     value: districtData.pricePerSqm,
@@ -149,18 +149,18 @@ export function getAllDataSources() {
     },
     economicIndicators: {
       inflation: {
-        source: dataConfig.economicIndicators.inflation.source,
-        lastUpdated: dataConfig.economicIndicators.inflation.lastUpdated,
-        confidence: dataConfig.economicIndicators.inflation.confidenceLevel,
-        isOutdated: isDataOutdated(dataConfig.economicIndicators.inflation.lastUpdated),
-        daysOld: getDaysOld(dataConfig.economicIndicators.inflation.lastUpdated),
+        source: dataConfig.economicIndicators.inflation.monthly.source,
+        lastUpdated: dataConfig.economicIndicators.inflation.monthly.lastUpdated,
+        confidence: dataConfig.economicIndicators.inflation.monthly.confidenceLevel,
+        isOutdated: isDataOutdated(dataConfig.economicIndicators.inflation.monthly.lastUpdated),
+        daysOld: getDaysOld(dataConfig.economicIndicators.inflation.monthly.lastUpdated),
       },
       appreciation: {
-        source: dataConfig.economicIndicators.propertyAppreciation.source,
-        lastUpdated: dataConfig.economicIndicators.propertyAppreciation.lastUpdated,
-        confidence: dataConfig.economicIndicators.propertyAppreciation.confidenceLevel,
-        isOutdated: isDataOutdated(dataConfig.economicIndicators.propertyAppreciation.lastUpdated),
-        daysOld: getDaysOld(dataConfig.economicIndicators.propertyAppreciation.lastUpdated),
+        source: dataConfig.economicIndicators.propertyAppreciation.monthly.source,
+        lastUpdated: dataConfig.economicIndicators.propertyAppreciation.monthly.lastUpdated,
+        confidence: dataConfig.economicIndicators.propertyAppreciation.monthly.confidenceLevel,
+        isOutdated: isDataOutdated(dataConfig.economicIndicators.propertyAppreciation.monthly.lastUpdated),
+        daysOld: getDaysOld(dataConfig.economicIndicators.propertyAppreciation.monthly.lastUpdated),
       },
     },
     dataQuality: dataConfig.dataQuality,
