@@ -4,45 +4,75 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-A web tool for construction companies in Antalya, Turkey to estimate:
-1. Construction cost for a project on their land
-2. Potential sales revenue
-3. Basic profitability (profit margin, ROI)
+A sophisticated web application for construction companies in Antalya, Turkey to estimate:
+1. Construction costs with timeline-based inflation modeling
+2. Sales revenue with NPV-adjusted time value of money
+3. Three-scenario profitability analysis (Optimistic, Realistic, Pessimistic)
 
-Target user: Land owners or evaluators who need to answer "What will it cost to build, and what can I sell it for?"
+Target user: Land owners, developers, and construction companies who need accurate financial projections accounting for time value of money and economic conditions.
 
-## Current Phase: 1.5 - Timeline & Parameter Transparency
+## Current Status: Phase 1.5 Complete ✅
 
-**Phase 1.5 ENHANCEMENTS:**
-- ✅ Construction timeline modeling with inflation
-- ✅ S-curve cost distribution (realistic cash flow)
-- ✅ Future sales price projections with appreciation
-- ✅ Multi-scenario profit analysis (Nominal, Projected, Pessimistic)
-- ✅ Parameter transparency system
-- ✅ Advanced settings panel in form
+**Deployed**: https://yigitdurna.github.io/construction-forecast/
 
-**Phase 1 CORE FEATURES:**
-- Single project estimate (one project type at a time)
-- User inputs: location, land size, EMSAL, project type, quality level, total sqm
-- Timeline inputs: construction duration, inflation rate, appreciation rate, cost distribution
-- Outputs: cost breakdown with inflation, sales projection with appreciation, multi-scenario profit analysis
-- Web interface (form → results page)
-- Static reference data (clearly labeled as defaults)
+**Phase 1.5 - Advanced Financial Modeling (COMPLETE):**
+- ✅ NPV (Net Present Value) calculations with 1% monthly discount rate
+- ✅ Three-scenario analysis with proper parameter recalculation
+- ✅ S-curve cost distribution with compound inflation
+- ✅ Price appreciation modeling after construction
+- ✅ Unified parameter system with live editing
+- ✅ Dual-mode UI (Quick summary + Detailed analysis)
+- ✅ Location intelligence from 15 Antalya districts
+- ✅ Complete documentation (README, CALCULATION_GUIDE, DATA_REQUIREMENTS)
+- ✅ GitHub Pages deployment configured
+
+**Phase 1 - Core Features (COMPLETE):**
+- ✅ Single project estimation
+- ✅ User inputs: location, land size, EMSAL, project type, quality level, total sqm
+- ✅ Advanced parameters: construction duration, inflation, appreciation, cost distribution
+- ✅ Comprehensive cost breakdown by category
+- ✅ Sales projections with market data
+- ✅ Turkish language interface
 
 **OUT OF SCOPE (Phase 2+):**
-- Scenario comparison UI (apartments vs villas side-by-side)
+- Multi-project portfolio comparison
 - PDF export
-- User accounts
-- Real-time data APIs
-- Monthly cost breakdown visualization
-- Parameter editing UI component
+- User accounts / authentication
+- Real-time market data integration
+- Cash flow visualization charts
+- Pre-sales modeling during construction
+
+## Deployment Information
+
+### Live Application
+- **URL**: https://yigitdurna.github.io/construction-forecast/
+- **Repository**: https://github.com/yigitdurna/construction-forecast
+- **Branch**: main
+- **Deployment**: Automated via GitHub Pages (gh-pages branch)
+
+### Deployment Commands
+```bash
+# Deploy updates
+npm run deploy
+
+# Manual deployment steps
+npm run build          # Build production version
+gh-pages -d dist      # Deploy dist folder to gh-pages branch
+```
+
+### Configuration
+- **Base URL**: `/construction-forecast/` (vite.config.ts)
+- **Homepage**: `https://yigitdurna.github.io/construction-forecast` (package.json)
+- **Build Output**: `dist/` directory
+- **Deploy Script**: `predeploy` → `deploy` in package.json
 
 ## Tech Stack
 
 - **Frontend**: React 18 with TypeScript
-- **Build Tool**: Vite
-- **Styling**: Tailwind CSS
-- **No Backend**: Phase 1 uses static reference data only
+- **Build Tool**: Vite 6.0.5
+- **Styling**: Tailwind CSS 3.4
+- **Deployment**: GitHub Pages (gh-pages package)
+- **No Backend**: Static reference data, client-side calculations
 
 ## Development Setup
 
@@ -55,13 +85,13 @@ npm install
 ```bash
 npm run dev
 ```
-Server will start at `http://localhost:5173`
+Server starts at `http://localhost:5173`
 
 ### Build for Production
 ```bash
 npm run build
 ```
-Output will be in `dist/` directory
+Output in `dist/` directory
 
 ### Lint Code
 ```bash
@@ -73,152 +103,339 @@ npm run lint
 npm run preview
 ```
 
+### Deploy to GitHub Pages
+```bash
+npm run deploy
+```
+
 ## Project Structure
 
 ```
-src/
-├── components/                 # React components
-│   ├── ProjectForm.tsx         # Input form with basic + advanced settings
-│   └── ResultsView.tsx         # Results with timeline, scenarios, inflation impact
-├── data/                       # Static reference data and defaults
-│   ├── referenceData.ts        # Construction costs, sales prices, multipliers
-│   └── parameterDefaults.ts    # Parameter transparency system generator
-├── types/                      # TypeScript type definitions
-│   └── index.ts                # All types: inputs, timeline, costs, sales, profit, parameters
-├── utils/                      # Utility functions
-│   └── calculations.ts         # Timeline, S-curve, inflation, appreciation, profit scenarios
-├── App.tsx                     # Main app component with state management
-├── main.tsx                    # React entry point
-└── index.css                   # Global styles with Tailwind imports
+construction-forecast/
+├── src/
+│   ├── components/              # React components
+│   │   ├── ProjectForm.tsx      # Input form with unified parameters
+│   │   ├── ResultsView.tsx      # Dual-mode results display
+│   │   ├── ParametersPanel.tsx  # Parameter editing panel
+│   │   ├── UnitMixEditor.tsx    # Unit type configuration
+│   │   └── DataSourceBadge.tsx  # Data quality indicators
+│   ├── data/                    # Market reference data
+│   │   ├── antalyaLocations.ts  # 15 districts with pricing
+│   │   ├── costParameterDefaults.ts  # Construction costs by category
+│   │   ├── salesParameterDefaults.ts # Sales pricing factors
+│   │   ├── unitTypes.ts         # Unit size defaults
+│   │   ├── dataConfig.json      # Data source metadata
+│   │   └── referenceData.ts     # Legacy reference data
+│   ├── lib/                     # Business logic
+│   │   └── scenarios.ts         # Three-scenario calculations
+│   ├── types/                   # TypeScript definitions
+│   │   ├── index.ts             # Core types
+│   │   ├── costParameters.ts    # Cost parameter types
+│   │   └── salesParameters.ts   # Sales parameter types
+│   ├── utils/                   # Calculation engine
+│   │   ├── calculations.ts      # NPV, inflation, S-curve
+│   │   ├── dataLoader.ts        # Data quality tracking
+│   │   └── unitMixCalculator.ts # Unit optimization
+│   ├── App.tsx                  # Main app with state management
+│   ├── main.tsx                 # React entry point
+│   └── index.css                # Global Tailwind styles
+├── CALCULATION_GUIDE.md         # Complete formula documentation
+├── DATA_REQUIREMENTS.md         # Market data collection guide
+├── README.md                    # User-facing documentation
+├── CLAUDE.md                    # This file
+├── vite.config.ts               # Vite configuration with base URL
+└── package.json                 # Dependencies and scripts
 ```
 
 ## Architecture
 
 ### Data Flow
-1. User fills out `ProjectForm` with project parameters
+1. User fills out `ProjectForm` with project details and optional parameters
 2. Form submission triggers `calculateProjectCosts()` in `calculations.ts`
-3. Calculation function:
-   - Fetches reference data from `referenceData.ts`
-   - Calculates costs (construction, land, permits, design, contingency)
-   - Calculates sales projections (price per m², total revenue, unit count)
-   - Calculates profit metrics (gross profit, margin, ROI)
-4. Results are passed to `ResultsView` component for display
+3. Calculation engine:
+   - Loads location-specific market data
+   - Calculates nominal costs by category (structure, envelope, MEP, interior, site, soft, financial)
+   - Applies S-curve distribution and compound inflation over construction timeline
+   - Projects future sales prices with appreciation
+   - Applies NPV discounting for time value of money
+   - Calculates three profit scenarios with adjusted parameters
+4. Results passed to `ResultsView` with dual-mode display
+5. User can edit parameters in `ParametersPanel` for instant recalculation
 
 ### Key Calculation Logic
 
-**Timeline Calculation** (`src/utils/calculations.ts:calculateTimeline`):
-- Default construction duration based on project type and size
-- Completion date = start date + construction months
-- Sale date = completion date + months to sell after completion
+**NPV (Net Present Value)** (`src/utils/calculations.ts:calculateFutureSalesPrice`):
+- **Purpose**: Account for time value of money - money today is worth more than money tomorrow
+- **Discount Rate**: 1% monthly (~12.7% annual) representing opportunity cost of capital
+- **Formula**: `NPV = futureSales / (1 + 0.01)^totalMonths`
+- **Critical**: Without NPV, longer projects would appear more profitable (due to appreciation) which is incorrect
+- **Impact**: 24-month project loses ~21% of future value to time discounting
+- **Why 1% not 2.5%**: Real estate provides inflation protection, so discount rate < inflation rate
 
-**S-Curve Distribution** (`src/utils/calculations.ts:generateSCurveDistribution`):
-- Models realistic construction cash flow using logistic curve
-- Early months: ~15% of costs (foundation, initial structure)
-- Middle months: ~55% of costs (main structure, MEP)
-- Final months: ~30% of costs (finishes, completion)
-- Alternative: Linear distribution for simple modeling
-
-**Inflation-Adjusted Costs** (`src/utils/calculations.ts:calculateInflationAdjustedCosts`):
-- Applies compound monthly inflation to construction costs over time
-- Land cost paid upfront (no inflation)
-- Construction-related costs inflated month by month based on S-curve
-- Formula: inflated = nominal × (1 + monthlyRate)^(month - 1)
-- Returns both nominal (today's prices) and inflated (real) costs
-
-**Future Sales Price** (`src/utils/calculations.ts:calculateFutureSalesPrice`):
-- Projects sales prices forward to completion + selling period
-- Formula: projected = current × (1 + monthlyRate)^totalMonths
-- totalMonths = construction duration + months to sell
-- Returns both current and projected prices with appreciation impact
-
-**Cost Calculation** (`src/utils/calculations.ts:calculateCosts`):
-- Construction cost = cost per m² × total sqm (nominal)
-- Land cost = land price per m² × land size (paid upfront)
-- Permits & fees = construction cost × 8%
-- Design = construction cost × 5%
-- Contingency = subtotal × 10%
-- Applies inflation to all construction-related costs
-- Returns both nominal and inflated totals
-
-**Sales Calculation** (`src/utils/calculations.ts:calculateSales`):
-- Uses sales prices from `referenceData.ts` based on project type + quality
-- Estimates unit count using average unit sizes
-- Projects future sales prices with appreciation
-- Returns both current and projected sales values
-
-**Profit Calculation** (`src/utils/calculations.ts:calculateProfit`):
-- **Scenario 1 - Nominal**: current sales - nominal costs (no time value)
-- **Scenario 2 - Projected (Realistic)**: projected sales - inflated costs (accounts for both inflation and appreciation)
-- **Scenario 3 - Pessimistic**: current sales - inflated costs (inflation hurts, no price appreciation)
-- Each scenario calculates: profit, margin %, ROI %
-
-### Reference Data (`src/data/referenceData.ts`)
-
-All prices are in Turkish Lira (TRY) and should be updated with real market data:
-- Construction costs per m² by quality level (standard: 8K, mid: 12K, luxury: 18K)
-- Sales prices per m² by project type and quality level
-- Land prices per m² by location (defaults to 5K TRY/m², with district-specific values)
-- Cost multipliers: permits (8%), design (5%), contingency (10%)
-- Average unit sizes: apartment (120m²), villa (200m²), mixed (140m²)
-
-### Parameter Transparency System (`src/data/parameterDefaults.ts`)
-
-The `getDefaultParameters()` function generates a comprehensive parameter structure:
-
-**Parameter Groups:**
-1. **Location & Land**: land price, EMSAL, buildable area, actual construction area
-2. **Construction Costs**: base cost/m², quality multiplier, permits %, design %, contingency %
-3. **Timeline & Inflation**: duration, start date, monthly inflation, cost distribution model
-4. **Sales & Market**: current price/m², monthly appreciation, estimated units
-5. **Financial Summary**: calculated totals
-
-**Parameter Metadata:**
-- `value`: Current parameter value
-- `source`: Where it comes from (user_input, default, calculated, district_data)
-- `editable`: Whether user can modify it
-- `description`: Explanation of what it means
-- `min/max/step`: Validation constraints
-
-This system enables:
-- Full visibility into calculation assumptions
-- Future parameter editing UI
-- Audit trail of where values originate
-- User override of defaults
-
-## Key Domain Concepts
-
-- **EMSAL**: Floor Area Ratio - the ratio of total building floor area to the land area
-- **Project Types**: Apartments, villas, mixed-use developments
-- **Quality Levels**: Different construction quality standards affecting cost and sales price
-- **Antalya Market**: Local construction costs and sales prices specific to the region
-- **S-Curve**: Realistic construction cash flow pattern (slow-fast-slow spending)
-- **Inflation Impact**: Time value of money - costs increase over construction period
-- **Price Appreciation**: Real estate value growth from start to sale completion
-- **Scenarios**: Different economic assumptions (optimistic, realistic, pessimistic)
-
-## Phase 1.5 Default Values
-
-**Timeline Defaults:**
-- Construction duration: 10-24 months (calculated based on project type and size)
+**Timeline Calculation** (`src/utils/calculations.ts`):
+- Default construction duration based on project type and size:
   - Villa < 500m²: 10 months
   - Villa ≥ 500m²: 14 months
   - Apartment < 3000m²: 14 months
   - Apartment 3000-8000m²: 18 months
   - Apartment > 8000m²: 24 months
-- Monthly inflation rate: 2.5% (~34% annual, adjustable)
-- Monthly appreciation rate: 1.5% (~20% annual, adjustable)
-- Months to sell after completion: 6 months (adjustable)
-- Cost distribution: S-curve (realistic) or Linear (simple)
+- Total months until cash = construction + months to sell (default 6)
+- All timeline values user-adjustable
 
-**Economic Assumptions:**
-- Inflation applies to: construction, permits, design, contingency (NOT land)
-- Appreciation applies to: all sales revenue
-- Scenarios calculated:
-  1. **Nominal**: No inflation, no appreciation (baseline)
-  2. **Projected (Realistic)**: With inflation AND appreciation
-  3. **Pessimistic**: With inflation, NO appreciation
+**S-Curve Distribution** (`src/utils/calculations.ts:generateSCurveDistribution`):
+- Models realistic construction spending using logistic function
+- Formula: `S(t) = 1 / (1 + e^(-10 × (t - 0.5)))`
+- Typical 18-month pattern:
+  - Months 1-4: ~15% (foundation, permits)
+  - Months 5-12: ~65% (structure, MEP, envelope)
+  - Months 13-18: ~20% (interior, finishing)
+- More accurate than linear distribution for large projects
 
-**UI Features:**
-- Advanced settings panel: Collapsible section for timeline parameters
-- Results display: Timeline summary, inflation impact, multi-scenario comparison
-- Visual indicators: Color-coded profit scenarios (green=realistic, orange=pessimistic)
+**Inflation-Adjusted Costs** (`src/utils/calculations.ts:calculateInflationAdjustedCosts`):
+- Applies compound monthly inflation to construction costs over timeline
+- **Land cost**: Paid upfront, NO inflation applied
+- **Construction costs**: Inflated month-by-month based on S-curve spending
+- **Formula**: `inflatedCost[m] = nominalCost × spendPercent[m] × (1 + rate)^(m-1)`
+- **Default**: 2.5% monthly (~34% annual)
+- **Example**: 18-month project with 2.5% monthly = ~25% average cost increase
+
+**Future Sales Price** (`src/utils/calculations.ts:calculateFutureSalesPrice`):
+- Projects sales prices to completion + selling period
+- **Appreciation**: Only applies AFTER construction completes
+- **Formula**: `projectedPrice = currentPrice × (1 + rate)^monthsToSell`
+- **Default**: 1.5% monthly (~20% annual)
+- **Then**: Apply NPV discount for time value of money
+- **Example**: 6 months appreciation = +9.3%, then NPV discount for 24 total months = -21.2%
+
+**Cost Categories** (15+ parameters in `src/data/costParameterDefaults.ts`):
+1. **Structure**: Frame (8,500 TL/m²), Foundation (3,000 TL/m² land)
+2. **Envelope**: Walls (4,500 TL/m²), Windows (4,800 TL/m²), Roof (1,800 TL/m² land)
+3. **MEP**: HVAC (4,500 TL/m²), Electrical (3,000 TL/m²), Plumbing (2,400 TL/m²)
+4. **Interior**: Flooring (4,500 TL/m² net), Kitchen (500K TL/unit), Bathroom (250K TL/unit), Doors (1,000 TL/m² net), Painting (850 TL/m² net)
+5. **Site**: Landscaping (1,500 TL/m² land), Pool (1.5M TL fixed)
+6. **Soft Costs**: Design (5% of subtotal), Permits (2% of subtotal)
+7. **Financial**: Contingency (15% of subtotal), OH&P (12% of subtotal)
+
+**Three-Scenario Analysis** (`src/lib/scenarios.ts:calculateAllScenarios`):
+1. **Optimistic (İyimser)**:
+   - Cost variance: -8% (under budget)
+   - Sales variance: +8% (higher prices)
+   - Inflation: -0.5%/month (2.0% instead of 2.5%)
+   - Appreciation: +0.5%/month (2.0% instead of 1.5%)
+   - Timeline: -10% (faster completion)
+
+2. **Realistic (Gerçekçi)** ⭐ RECOMMENDED:
+   - Base case with user-specified parameters
+   - Default inflation: 2.5%/month
+   - Default appreciation: 1.5%/month
+   - Normal timeline
+
+3. **Pessimistic (Kötümser)**:
+   - Cost variance: +15% (over budget)
+   - Sales variance: -8% (lower prices)
+   - Inflation: +1.0%/month (3.5% instead of 2.5%)
+   - Appreciation: -1.0%/month (0.5% instead of 1.5%)
+   - Timeline: +20% (delays)
+
+**IMPORTANT**: Scenarios do NOT just multiply final profit - they recalculate from scratch with adjusted parameters, ensuring accurate compound effects.
+
+**Profit Calculation**:
+```typescript
+// Realistic (recommended)
+realisticProfit = npvAdjustedSales - inflatedCosts
+realisticROI = (profit / inflatedCosts) × 100
+realisticMargin = (profit / npvAdjustedSales) × 100
+```
+
+### Location Intelligence (`src/data/antalyaLocations.ts`)
+
+15 Antalya districts with market-specific data:
+- Land prices (10,000 - 30,000 TL/m²)
+- Sales prices by project type and quality
+- Location multipliers (0.85 - 1.2x)
+- Amenity premiums (5-15%)
+- Market conditions (current: 1.0 = normal)
+- Update frequency tracking
+
+**Market Index Calculation**:
+```typescript
+basePrice × locationMultiplier × qualityMultiplier
+  × (1 + amenityPremium) × marketCondition
+```
+
+### Parameter Transparency System
+
+**Unified Parameter Management**:
+- All parameters visible in ProjectForm "Gelişmiş Parametreler" section
+- Live editing in ResultsView via ParametersPanel
+- Instant recalculation on parameter change
+- Parameter override system tracks user modifications
+
+**Parameter Metadata** (`src/data/costParameterDefaults.ts`):
+- `id`: Unique identifier
+- `label`: Display name (Turkish)
+- `value`: Current value
+- `defaultValue`: Original default
+- `unit`: TL/m², TL/unit, %, etc.
+- `appliedTo`: gross_sqm, net_sqm, land_sqm, fixed, subtotal
+- `category`: structure, envelope, MEP, interior, site, soft, financial
+- `editable`: User can modify
+- `description`: Explanation (Turkish)
+
+### Data Quality Tracking (`src/utils/dataLoader.ts`)
+
+Tracks source and freshness of all market data:
+```typescript
+interface DataSourceInfo {
+  value: number;
+  source: string;           // "TCMB", "Emlak Konut", etc.
+  lastUpdated: string;      // ISO date
+  confidenceLevel: 'high' | 'medium' | 'low';
+  isOutdated: boolean;      // > 90 days old
+  daysOld: number;
+}
+```
+
+UI badges show data quality to users with color coding.
+
+## Key Domain Concepts
+
+- **EMSAL (İmar Katsayısı)**: Floor Area Ratio - total building floor area ÷ land area
+- **Net-to-Gross Ratio**: 85% (net saleable area = total × 0.85)
+- **NPV (Net Present Value)**: Time value of money - future cash flows discounted to present
+- **S-Curve**: Realistic construction spending pattern (slow-fast-slow)
+- **Compound Inflation**: Monthly inflation applied repeatedly over construction period
+- **Price Appreciation**: Real estate value growth (only after construction completes)
+- **Opportunity Cost**: Why we discount future cash flows (could invest money elsewhere)
+- **Quality Levels**: Standard (0.85x), Mid (1.0x), Luxury (1.25x)
+
+## Default Economic Parameters (November 2025)
+
+**Timeline:**
+- Construction: 10-24 months (auto-calculated from size/type)
+- Months to sell: 6 months after completion
+- Cost distribution: S-curve (always used for accuracy)
+
+**Economic Rates:**
+- Monthly inflation: 2.5% (~34% annual)
+- Monthly appreciation: 1.5% (~20% annual)
+- NPV discount rate: 1.0% monthly (~12.7% annual)
+
+**Why These Defaults:**
+- Inflation: Based on TCMB projections for Turkish construction sector
+- Appreciation: Historical real estate price index for Antalya region
+- Discount rate: Opportunity cost lower than inflation due to RE inflation protection
+
+## Known Limitations
+
+**Not Included:**
+- Marketing & sales costs (2-5%)
+- Property taxes during construction
+- Insurance premiums
+- Legal & notary fees
+- Utility connection costs
+- Financing costs (assumes cash purchase)
+
+**Assumptions:**
+- All units sell at once at "months to sell" date
+- No pre-sales during construction
+- Single quality level per project
+- Land cost paid upfront
+
+**Accuracy Estimates:**
+- Construction costs: ±10-15%
+- Sales prices: ±15-20%
+- Timeline: ±20%
+- Economic parameters: ±30%
+
+## Important Implementation Notes
+
+### TypeScript Considerations
+- All unused variables must be removed or prefixed with `_`
+- Type indexing requires `as keyof typeof` for dynamic keys
+- Nested object properties need proper type assertions
+- Build must pass strict TypeScript checks before deployment
+
+### State Management
+- App.tsx maintains top-level state
+- Parameter overrides tracked separately from base inputs
+- Changes trigger full recalculation, not incremental updates
+- Both cost and sales parameter overrides supported
+
+### Performance
+- Calculations are synchronous (< 10ms typical)
+- No need for web workers or async patterns
+- Re-renders optimized with React memo where needed
+- S-curve distribution pre-calculated once per timeline change
+
+### Testing Checklist
+Before deployment, verify:
+1. ✅ Build succeeds (`npm run build`)
+2. ✅ TypeScript strict mode passes
+3. ✅ All calculations produce valid numbers (no NaN/Infinity)
+4. ✅ Parameter editing triggers recalculation
+5. ✅ Three scenarios show different results
+6. ✅ NPV < Projected sales (time value loss)
+7. ✅ Inflated costs > Nominal costs (inflation impact)
+8. ✅ URL routing works on GitHub Pages
+
+## Recent Updates
+
+**November 30, 2025 - Deployment Session:**
+- Fixed TypeScript build errors (19 errors resolved)
+- Corrected GitHub username (yigidurna → yigitdurna)
+- Successfully deployed to GitHub Pages
+- Updated README.md with Phase 1.5 features
+- Verified live site returning HTTP 200
+
+**November 2025 - Phase 1.5 Implementation:**
+- Added NPV calculations with 1% monthly discount rate
+- Implemented three-scenario analysis with proper recalculation
+- Unified parameter system in single collapsible section
+- Added dual-mode UI (Quick + Detailed views)
+- Created comprehensive CALCULATION_GUIDE.md
+- Created DATA_REQUIREMENTS.md for market data updates
+
+## Documentation
+
+**For Users:**
+- `README.md` - Getting started, features, deployment instructions
+- Live site includes Turkish UI with explanations
+
+**For Developers:**
+- `CLAUDE.md` - This file, comprehensive project overview
+- `CALCULATION_GUIDE.md` - Mathematical formulas, examples, methodology
+- `DATA_REQUIREMENTS.md` - Market data collection and update guide
+
+**For Future Development:**
+- Parameter system ready for advanced editing UI
+- Scenario framework can extend to more scenarios
+- Unit mix editor foundation for portfolio optimization
+- Data quality system ready for real-time data integration
+
+## Phase 2 Planning (Future)
+
+**Multi-Project Portfolio:**
+- Compare 3-5 projects side-by-side
+- Portfolio optimization (max ROI under budget constraint)
+- Resource allocation across projects
+- Timeline coordination
+
+**Market Intelligence:**
+- Real-time data integration via API
+- Trend analysis and forecasting
+- Competitive benchmarking
+- District comparison tools
+
+**Advanced Features:**
+- Cash flow visualization charts
+- Pre-sales modeling during construction
+- Sensitivity analysis (tornado diagrams)
+- PDF report generation
+- Email delivery of results
+
+---
+
+**Project Status**: Phase 1.5 Complete ✅ | Deployed ✅ | Ready for Testing
+**Last Updated**: November 30, 2025
+**Maintainer**: Construction Forecast Team
