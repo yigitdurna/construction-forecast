@@ -113,9 +113,41 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    // KEOS Kepez uses a 2-step API flow (verified December 5, 2025):
+    // KEOS Kepez uses a 3-step API flow (with session - Solution 2):
+    // Step 0: Establish session by fetching main page
     // Step 1: Search for parselid using ada/parsel
     // Step 2: Fetch İmar data using parselid
+
+    // STEP 0: ESTABLISH SESSION
+    console.log('[Kepez] ===== STEP 0: ESTABLISH SESSION =====');
+    const sessionResponse = await fetchWithTimeout(
+      'https://keos.kepez-bld.gov.tr/imardurumu/',
+      {
+        method: 'GET',
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+          'Accept-Language': 'tr-TR,tr;q=0.9,en-US;q=0.8,en;q=0.7',
+        },
+      },
+      TIMEOUT_MS
+    );
+
+    console.log('[Kepez] Session response status:', sessionResponse.status);
+
+    // Extract ALL Set-Cookie headers (getSetCookie is available in Node.js 19.7+)
+    const setCookieHeaders = (sessionResponse.headers as any).getSetCookie?.() || [];
+    const cookieHeader = sessionResponse.headers.get('set-cookie') || '';
+    console.log('[Kepez] Set-Cookie headers array:', setCookieHeaders);
+    console.log('[Kepez] Cookie header raw:', cookieHeader);
+
+    // Parse cookies for forwarding (extract just the cookie name=value parts)
+    const cookies = cookieHeader
+      .split(',')
+      .map(c => c.split(';')[0].trim())
+      .filter(c => c.includes('='))
+      .join('; ');
+    console.log('[Kepez] Parsed cookies to send:', cookies);
 
     // STEP 1: Search for parselid
     // Format: imarsvc.aspx?type=adaparsel&adaparsel={ada}/{parsel}&ilce=-100000&tmahalle=-100000&tamKelimeAra=true
@@ -126,7 +158,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     console.log('[Kepez] Ada/Parsel format:', `${adaStr}/${parselStr}`);
     console.log('[Kepez] FINAL SEARCH URL:', searchUrl);
 
-    // SOLUTION 1: Add X-Requested-With header for AJAX requests
+    // SOLUTION 2: Add session cookies from STEP 0
     const searchHeaders = {
       'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
       'Accept': 'application/json, text/html, */*',
@@ -134,7 +166,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       'Accept-Encoding': 'gzip, deflate, br',
       'Referer': 'https://keos.kepez-bld.gov.tr/imardurumu/',
       'Origin': 'https://keos.kepez-bld.gov.tr',
-      'X-Requested-With': 'XMLHttpRequest',  // SOLUTION 1: Add AJAX header
+      'X-Requested-With': 'XMLHttpRequest',
+      'Cookie': cookies,  // SOLUTION 2: Forward session cookies
     };
 
     console.log('[Kepez] Request headers:', JSON.stringify(searchHeaders, null, 2));
@@ -214,7 +247,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     console.log('[Kepez] Extracted parselId:', parselId);
     console.log('[Kepez] FINAL İMAR URL:', imarUrl);
 
-    // SOLUTION 1: Add X-Requested-With header for AJAX requests
+    // SOLUTION 2: Add session cookies from STEP 0
     const imarHeaders = {
       'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
       'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
@@ -222,7 +255,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       'Accept-Encoding': 'gzip, deflate, br',
       'Referer': 'https://keos.kepez-bld.gov.tr/imardurumu/',
       'Origin': 'https://keos.kepez-bld.gov.tr',
-      'X-Requested-With': 'XMLHttpRequest',  // SOLUTION 1: Add AJAX header
+      'X-Requested-With': 'XMLHttpRequest',
+      'Cookie': cookies,  // SOLUTION 2: Forward session cookies
     };
 
     console.log('[Kepez] Request headers:', JSON.stringify(imarHeaders, null, 2));
