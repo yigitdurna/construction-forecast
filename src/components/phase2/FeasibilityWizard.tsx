@@ -4,6 +4,7 @@
  * Main container for the 4-step feasibility analysis wizard
  */
 
+import { Link } from 'react-router-dom';
 import { useFeasibility } from '../../context/FeasibilityContext';
 import { StepIndicator } from './StepIndicator';
 import { ParselLookupWithImar } from './ParselLookupWithImar';
@@ -181,13 +182,36 @@ export function FeasibilityWizard(): JSX.Element {
   return (
     <div className="mx-auto max-w-5xl px-4 py-8">
       {/* Header */}
-      <div className="mb-8 text-center">
-        <h1 className="text-3xl font-bold text-gray-900">
-          Fizibilite Analizi Sihirbazı
-        </h1>
-        <p className="mt-2 text-sm text-gray-600">
-          4 adımda kapsamlı inşaat fizibilite analizi
-        </p>
+      <div className="mb-8">
+        <div className="mb-4">
+          <Link
+            to="/"
+            className="inline-flex items-center text-sm text-gray-600 hover:text-gray-900"
+          >
+            <svg
+              className="mr-1 h-4 w-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M15 19l-7-7 7-7"
+              />
+            </svg>
+            Projelere Dön
+          </Link>
+        </div>
+        <div className="text-center">
+          <h1 className="text-3xl font-bold text-gray-900">
+            Fizibilite Analizi Sihirbazı
+          </h1>
+          <p className="mt-2 text-sm text-gray-600">
+            4 adımda kapsamlı inşaat fizibilite analizi
+          </p>
+        </div>
       </div>
 
       {/* Step Indicator */}
