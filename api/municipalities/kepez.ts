@@ -111,14 +111,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    // KEOS Kepez uses a 2-step API flow:
-    // Step 1: Search for parselid using mahalle, ada, parsel
+    // KEOS Kepez uses a 2-step API flow (verified December 5, 2025):
+    // Step 1: Search for parselid using ada/parsel
     // Step 2: Fetch İmar data using parselid
 
     // STEP 1: Search for parselid
-    const searchUrl = `${KEPEZ_KEOS_URL}ilkIslemSorgulananMahalle.aspx?mahalle=${encodeURIComponent(
-      mahalleStr
-    )}&ada=${adaStr}&parsel=${parselStr}`;
+    // Format: imarsvc.aspx?type=adaparsel&adaparsel={ada}/{parsel}&ilce=-100000&tmahalle=-100000
+    const searchUrl = `${KEPEZ_KEOS_URL}imarsvc.aspx?type=adaparsel&adaparsel=${adaStr}/${parselStr}&ilce=-100000&tmahalle=-100000`;
 
     const searchResponse = await fetchWithTimeout(
       searchUrl,
@@ -140,22 +139,42 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const searchHtml = await searchResponse.text();
 
-    // Extract parselid from hidden input field
-    // <input type="hidden" name="parselid" id="parselid" value="30681" />
-    const parselIdMatch = searchHtml.match(
-      /<input[^>]*name="parselid"[^>]*value="(\d+)"[^>]*>/i
-    ) || searchHtml.match(
-      /<input[^>]*id="parselid"[^>]*value="(\d+)"[^>]*>/i
-    );
+    // Extract parselid from response
+    // The API may return parselid in various formats - try multiple patterns
+    let parselId: string | null = null;
 
-    if (!parselIdMatch || !parselIdMatch[1]) {
+    // Pattern 1: Hidden input field
+    const inputMatch = searchHtml.match(
+      /<input[^>]*(?:name|id)="parselid"[^>]*value="(\d+)"[^>]*>/i
+    );
+    if (inputMatch && inputMatch[1]) {
+      parselId = inputMatch[1];
+    }
+
+    // Pattern 2: JSON response
+    if (!parselId) {
+      try {
+        const jsonData = JSON.parse(searchHtml);
+        if (jsonData.parselid || jsonData.parselId || jsonData.PARSELID) {
+          parselId = String(jsonData.parselid || jsonData.parselId || jsonData.PARSELID);
+        }
+      } catch {
+        // Not JSON, continue
+      }
+    }
+
+    // Pattern 3: Direct number in response (if simple text response)
+    if (!parselId && /^\d+$/.test(searchHtml.trim())) {
+      parselId = searchHtml.trim();
+    }
+
+    if (!parselId) {
       throw new Error('Parsel ID bulunamadı. Ada/Parsel numarası hatalı olabilir.');
     }
 
-    const parselId = parselIdMatch[1];
-
     // STEP 2: Fetch İmar data using parselid
-    const imarUrl = `${KEPEZ_KEOS_URL}imarvekadastrobilgi.aspx?parselid=${parselId}`;
+    // Format: imar.aspx?parselid={parselid}
+    const imarUrl = `${KEPEZ_KEOS_URL}imar.aspx?parselid=${parselId}`;
 
     const imarResponse = await fetchWithTimeout(
       imarUrl,
