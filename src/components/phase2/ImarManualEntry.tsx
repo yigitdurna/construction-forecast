@@ -50,6 +50,17 @@ export function ImarManualEntry({
     validateOnChange: true,
   });
 
+  // Local state for display strings (allows typing decimals like "0.")
+  const [taksInput, setTaksInput] = useState(
+    cachedEntry?.imarData?.taks !== undefined ? String(cachedEntry.imarData.taks) : ''
+  );
+  const [kaksInput, setKaksInput] = useState(
+    cachedEntry?.imarData?.kaks !== undefined ? String(cachedEntry.imarData.kaks) : ''
+  );
+  const [katAdediInput, setKatAdediInput] = useState(
+    cachedEntry?.imarData?.katAdedi !== undefined ? String(cachedEntry.imarData.katAdedi) : ''
+  );
+
   const [showExplanation, setShowExplanation] = useState(false);
   const [showCachedNotice, setShowCachedNotice] = useState(false);
 
@@ -81,24 +92,79 @@ export function ImarManualEntry({
   };
 
   /**
-   * Handle input change with Turkish decimal separator support
+   * Handle TAKS input change (display only, no validation)
    */
-  const handleInputChange = (
-    field: keyof ManualImarParams,
-    inputValue: string
-  ) => {
-    // Allow empty string
-    if (inputValue === '') {
-      setValue(field, undefined);
+  const handleTaksChange = (inputValue: string) => {
+    // Allow typing anything (including partial decimals like "0.")
+    setTaksInput(inputValue);
+  };
+
+  /**
+   * Handle TAKS blur (parse and validate)
+   */
+  const handleTaksBlur = () => {
+    if (taksInput === '') {
+      setValue('taks', undefined);
       return;
     }
 
-    // Replace Turkish comma with period
-    const normalized = inputValue.replace(',', '.');
+    // Replace Turkish comma with period, then parse
+    const normalized = taksInput.replace(',', '.');
     const numValue = parseFloat(normalized);
 
     if (!isNaN(numValue)) {
-      setValue(field, numValue);
+      setValue('taks', numValue);
+      // Update display to show parsed number
+      setTaksInput(String(numValue));
+    }
+  };
+
+  /**
+   * Handle KAKS input change (display only, no validation)
+   */
+  const handleKaksChange = (inputValue: string) => {
+    setKaksInput(inputValue);
+  };
+
+  /**
+   * Handle KAKS blur (parse and validate)
+   */
+  const handleKaksBlur = () => {
+    if (kaksInput === '') {
+      setValue('kaks', undefined);
+      return;
+    }
+
+    const normalized = kaksInput.replace(',', '.');
+    const numValue = parseFloat(normalized);
+
+    if (!isNaN(numValue)) {
+      setValue('kaks', numValue);
+      setKaksInput(String(numValue));
+    }
+  };
+
+  /**
+   * Handle Kat Adedi input change (display only, no validation)
+   */
+  const handleKatAdediChange = (inputValue: string) => {
+    setKatAdediInput(inputValue);
+  };
+
+  /**
+   * Handle Kat Adedi blur (parse and validate)
+   */
+  const handleKatAdediBlur = () => {
+    if (katAdediInput === '') {
+      setValue('katAdedi', undefined);
+      return;
+    }
+
+    const numValue = parseInt(katAdediInput, 10);
+
+    if (!isNaN(numValue)) {
+      setValue('katAdedi', numValue);
+      setKatAdediInput(String(numValue));
     }
   };
 
@@ -206,10 +272,12 @@ export function ImarManualEntry({
               <div className="mt-1 flex items-center">
                 <input
                   type="text"
+                  inputMode="decimal"
                   id="taks"
                   name="taks"
-                  value={values.taks !== undefined ? values.taks : ''}
-                  onChange={(e) => handleInputChange('taks', e.target.value)}
+                  value={taksInput}
+                  onChange={(e) => handleTaksChange(e.target.value)}
+                  onBlur={handleTaksBlur}
                   placeholder={`örn: ${municipalityConfig.typicalTaks}`}
                   className={`block w-full rounded-lg border ${
                     fieldErrors.taks
@@ -242,10 +310,12 @@ export function ImarManualEntry({
               <div className="mt-1 flex items-center">
                 <input
                   type="text"
+                  inputMode="decimal"
                   id="kaks"
                   name="kaks"
-                  value={values.kaks !== undefined ? values.kaks : ''}
-                  onChange={(e) => handleInputChange('kaks', e.target.value)}
+                  value={kaksInput}
+                  onChange={(e) => handleKaksChange(e.target.value)}
+                  onBlur={handleKaksBlur}
                   placeholder={`örn: ${municipalityConfig.typicalKaks}`}
                   className={`block w-full rounded-lg border ${
                     fieldErrors.kaks
@@ -277,15 +347,14 @@ export function ImarManualEntry({
               </label>
               <div className="mt-1 flex items-center">
                 <input
-                  type="number"
+                  type="text"
+                  inputMode="numeric"
                   id="katAdedi"
                   name="katAdedi"
-                  value={values.katAdedi !== undefined ? values.katAdedi : ''}
-                  onChange={(e) => handleInputChange('katAdedi', e.target.value)}
+                  value={katAdediInput}
+                  onChange={(e) => handleKatAdediChange(e.target.value)}
+                  onBlur={handleKatAdediBlur}
                   placeholder={`örn: ${municipalityConfig.typicalKatAdedi}`}
-                  min={1}
-                  max={15}
-                  step={1}
                   className={`block w-full rounded-lg border ${
                     fieldErrors.katAdedi
                       ? 'border-red-300 focus:border-red-500 focus:ring-red-500'
