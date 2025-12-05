@@ -252,7 +252,8 @@ export type FeasibilityAction =
   | { type: 'SET_STEP4_DATA'; data: FinancialResult }
   | { type: 'GO_NEXT' }
   | { type: 'GO_BACK' }
-  | { type: 'RESET' };
+  | { type: 'RESET' }
+  | { type: 'LOAD_STATE'; state: Partial<FeasibilityState> };
 
 // ============================================================================
 // UI Text Constants

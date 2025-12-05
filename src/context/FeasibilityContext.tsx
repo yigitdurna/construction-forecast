@@ -1,10 +1,10 @@
 /**
  * Feasibility Wizard Context
  *
- * Manages state for the 4-step feasibility wizard
+ * Manages state for the 4-step feasibility wizard with auto-save
  */
 
-import React, { createContext, useContext, useReducer, ReactNode } from 'react';
+import React, { createContext, useContext, useReducer, useEffect, ReactNode } from 'react';
 import type {
   FeasibilityState,
   FeasibilityAction,
@@ -15,6 +15,8 @@ import type {
   FinancialResult,
 } from '../types/feasibility';
 import { isStepComplete } from '../types/feasibility';
+import { useProjectStorage } from '../hooks/useProjectStorage';
+import { wizardStateToProject, projectToWizardState } from '../utils/projectConverter';
 
 // ============================================================================
 // Context Type
@@ -23,6 +25,7 @@ import { isStepComplete } from '../types/feasibility';
 interface FeasibilityContextType {
   state: FeasibilityState;
   dispatch: React.Dispatch<FeasibilityAction>;
+  currentProjectId: string | null;
 
   // Convenience methods
   setStep: (step: WizardStep) => void;
@@ -33,6 +36,10 @@ interface FeasibilityContextType {
   setStep3Data: (data: PricingConfig) => void;
   setStep4Data: (data: FinancialResult) => void;
   reset: () => void;
+
+  // Project management
+  loadProject: (id: string) => void;
+  saveCurrentProject: () => void;
 }
 
 // ============================================================================
@@ -148,6 +155,15 @@ function feasibilityReducer(
       return initialState;
     }
 
+    case 'LOAD_STATE': {
+      // Merge loaded state into current state
+      return {
+        ...state,
+        ...action.state,
+        isStepValid: state.isStepValid, // Keep the function reference
+      };
+    }
+
     default:
       return state;
   }
@@ -165,10 +181,13 @@ const FeasibilityContext = createContext<FeasibilityContextType | null>(null);
 
 interface FeasibilityProviderProps {
   children: ReactNode;
+  projectId?: string; // Optional project ID to load on mount
 }
 
-export function FeasibilityProvider({ children }: FeasibilityProviderProps) {
+export function FeasibilityProvider({ children, projectId }: FeasibilityProviderProps) {
   const [state, dispatch] = useReducer(feasibilityReducer, initialState);
+  const [currentProjectId, setCurrentProjectId] = React.useState<string | null>(projectId || null);
+  const { getProject, saveProject } = useProjectStorage();
 
   // Convenience methods
   const setStep = (step: WizardStep) => {
@@ -201,11 +220,54 @@ export function FeasibilityProvider({ children }: FeasibilityProviderProps) {
 
   const reset = () => {
     dispatch({ type: 'RESET' });
+    setCurrentProjectId(null);
   };
+
+  // Project management methods
+  const loadProject = (id: string) => {
+    const project = getProject(id);
+    if (project) {
+      const wizardState = projectToWizardState(project);
+      dispatch({ type: 'LOAD_STATE', state: wizardState });
+      setCurrentProjectId(id);
+    }
+  };
+
+  const saveCurrentProject = () => {
+    if (!currentProjectId) {
+      // Create new project if not loaded from existing
+      const project = wizardStateToProject(state);
+      saveProject(project);
+      setCurrentProjectId(project.id);
+    } else {
+      // Update existing project
+      const existingProject = getProject(currentProjectId);
+      const project = wizardStateToProject(state, existingProject || undefined);
+      saveProject(project);
+    }
+  };
+
+  // Auto-save on step completion
+  useEffect(() => {
+    // Only auto-save if at least one step is complete
+    if (state.completedSteps.size > 0) {
+      saveCurrentProject();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.step1, state.step2, state.step3, state.step4]);
+
+  // Load project on mount if projectId provided
+  useEffect(() => {
+    if (projectId) {
+      loadProject(projectId);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [projectId]);
 
   const value: FeasibilityContextType = {
     state,
     dispatch,
+    currentProjectId,
     setStep,
     goNext,
     goBack,
@@ -214,6 +276,8 @@ export function FeasibilityProvider({ children }: FeasibilityProviderProps) {
     setStep3Data,
     setStep4Data,
     reset,
+    loadProject,
+    saveCurrentProject,
   };
 
   return (
