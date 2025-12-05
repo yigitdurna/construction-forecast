@@ -86,26 +86,28 @@ export function validateZoningParams(params: ZoningParams): ZoningError[] {
     });
   }
 
-  // Validate Çıkma Katsayısı (Projection coefficient)
-  if (
-    params.cikmaKatsayisi < ZONING_LIMITS.MIN_CIKMA ||
-    params.cikmaKatsayisi > ZONING_LIMITS.MAX_CIKMA
-  ) {
-    errors.push({
-      type: 'invalid_cikma',
-      message: `Çıkma katsayısı ${ZONING_LIMITS.MIN_CIKMA}-${ZONING_LIMITS.MAX_CIKMA} arasında olmalıdır`,
-      field: 'cikmaKatsayisi',
-      value: params.cikmaKatsayisi,
-    });
-  }
+  // Validate Çıkma Katsayısı (Projection coefficient) - optional in Phase 2.2
+  if (params.cikmaKatsayisi !== undefined) {
+    if (
+      params.cikmaKatsayisi < ZONING_LIMITS.MIN_CIKMA ||
+      params.cikmaKatsayisi > ZONING_LIMITS.MAX_CIKMA
+    ) {
+      errors.push({
+        type: 'invalid_cikma',
+        message: `Çıkma katsayısı ${ZONING_LIMITS.MIN_CIKMA}-${ZONING_LIMITS.MAX_CIKMA} arasında olmalıdır`,
+        field: 'cikmaKatsayisi',
+        value: params.cikmaKatsayisi,
+      });
+    }
 
-  if (!isFinite(params.cikmaKatsayisi) || params.cikmaKatsayisi < 1.0) {
-    errors.push({
-      type: 'invalid_cikma',
-      message: 'Çıkma katsayısı en az 1.0 olmalıdır',
-      field: 'cikmaKatsayisi',
-      value: params.cikmaKatsayisi,
-    });
+    if (!isFinite(params.cikmaKatsayisi) || params.cikmaKatsayisi < 1.0) {
+      errors.push({
+        type: 'invalid_cikma',
+        message: 'Çıkma katsayısı en az 1.0 olmalıdır',
+        field: 'cikmaKatsayisi',
+        value: params.cikmaKatsayisi,
+      });
+    }
   }
 
   // Validate height if provided
@@ -231,7 +233,9 @@ export function calculateZoning(params: ZoningParams): ZoningResult {
   // Formula: Toplam = Parsel Alanı × KAKS × Çıkma Katsayısı
   // KAKS (also called EMSAL) determines total buildable area
   // Çıkma katsayısı adds extra area for projections (balconies, bay windows)
-  const toplamInsaatAlani = params.parselAlani * params.kaks * params.cikmaKatsayisi;
+  // Phase 2.2: cikmaKatsayisi is optional, default to 1.0 (no projection)
+  const cikmaKatsayisi = params.cikmaKatsayisi ?? 1.0;
+  const toplamInsaatAlani = params.parselAlani * params.kaks * cikmaKatsayisi;
 
   // 3. Calculate Kat Adedi (Number of Floors)
   const floorCalc = calculateFloorCount(params);
@@ -282,7 +286,7 @@ export function calculateZoning(params: ZoningParams): ZoningResult {
     // Applied coefficients (for transparency)
     appliedTAKS: params.taks,
     appliedKAKS: params.kaks,
-    appliedCikma: params.cikmaKatsayisi,
+    appliedCikma: cikmaKatsayisi,
     appliedNetGrossRatio: netGrossRatio,
   };
 

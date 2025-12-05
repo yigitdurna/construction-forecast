@@ -242,7 +242,9 @@ export interface ZoningParams {
   kaks: number;              // Kat Alanı Kat Sayısı (Floor Area Ratio = EMSAL)
                              // Range: 0.0-3.0 (typically 0.60-2.50)
 
-  cikmaKatsayisi: number;    // Çıkma/Cumba Katsayısı (Projection coefficient)
+  // Phase 2.2: Made optional for simplified manual entry
+  // Defaults to 1.0 (no projection) if not provided
+  cikmaKatsayisi?: number;   // Çıkma/Cumba Katsayısı (Projection coefficient)
                              // Range: 1.0-2.0 (typically 1.40-1.80)
                              // Accounts for balconies, bay windows
 
