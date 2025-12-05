@@ -11,6 +11,8 @@ import { useImarCache } from '../../hooks/useImarCache';
 import { getMunicipalityConfig } from '../../data/municipalityLinks';
 import { ImarPreview } from './ImarPreview';
 import { ImarExplanationModal } from './ImarExplanationModal';
+import { DecimalInput } from '../ui/DecimalInput';
+import { IMAR_VALIDATION } from '../../config/validationRules';
 import type { ManualImarParams } from '../../utils/imarValidation';
 
 export interface ImarManualEntryProps {
@@ -50,17 +52,6 @@ export function ImarManualEntry({
     validateOnChange: true,
   });
 
-  // Local state for display strings (allows typing decimals like "0.")
-  const [taksInput, setTaksInput] = useState(
-    cachedEntry?.imarData?.taks !== undefined ? String(cachedEntry.imarData.taks) : ''
-  );
-  const [kaksInput, setKaksInput] = useState(
-    cachedEntry?.imarData?.kaks !== undefined ? String(cachedEntry.imarData.kaks) : ''
-  );
-  const [katAdediInput, setKatAdediInput] = useState(
-    cachedEntry?.imarData?.katAdedi !== undefined ? String(cachedEntry.imarData.katAdedi) : ''
-  );
-
   const [showExplanation, setShowExplanation] = useState(false);
   const [showCachedNotice, setShowCachedNotice] = useState(false);
 
@@ -91,82 +82,6 @@ export function ImarManualEntry({
     onSubmit(params);
   };
 
-  /**
-   * Handle TAKS input change (display only, no validation)
-   */
-  const handleTaksChange = (inputValue: string) => {
-    // Allow typing anything (including partial decimals like "0.")
-    setTaksInput(inputValue);
-  };
-
-  /**
-   * Handle TAKS blur (parse and validate)
-   */
-  const handleTaksBlur = () => {
-    if (taksInput === '') {
-      setValue('taks', undefined);
-      return;
-    }
-
-    // Replace Turkish comma with period, then parse
-    const normalized = taksInput.replace(',', '.');
-    const numValue = parseFloat(normalized);
-
-    if (!isNaN(numValue)) {
-      setValue('taks', numValue);
-      // Update display to show parsed number
-      setTaksInput(String(numValue));
-    }
-  };
-
-  /**
-   * Handle KAKS input change (display only, no validation)
-   */
-  const handleKaksChange = (inputValue: string) => {
-    setKaksInput(inputValue);
-  };
-
-  /**
-   * Handle KAKS blur (parse and validate)
-   */
-  const handleKaksBlur = () => {
-    if (kaksInput === '') {
-      setValue('kaks', undefined);
-      return;
-    }
-
-    const normalized = kaksInput.replace(',', '.');
-    const numValue = parseFloat(normalized);
-
-    if (!isNaN(numValue)) {
-      setValue('kaks', numValue);
-      setKaksInput(String(numValue));
-    }
-  };
-
-  /**
-   * Handle Kat Adedi input change (display only, no validation)
-   */
-  const handleKatAdediChange = (inputValue: string) => {
-    setKatAdediInput(inputValue);
-  };
-
-  /**
-   * Handle Kat Adedi blur (parse and validate)
-   */
-  const handleKatAdediBlur = () => {
-    if (katAdediInput === '') {
-      setValue('katAdedi', undefined);
-      return;
-    }
-
-    const numValue = parseInt(katAdediInput, 10);
-
-    if (!isNaN(numValue)) {
-      setValue('katAdedi', numValue);
-      setKatAdediInput(String(numValue));
-    }
-  };
 
   return (
     <div className="space-y-6">
@@ -261,118 +176,46 @@ export function ImarManualEntry({
         <div className="rounded-lg border border-gray-200 bg-white p-6">
           <div className="space-y-4">
             {/* TAKS Input */}
-            <div>
-              <label
-                htmlFor="taks"
-                className="block text-sm font-medium text-gray-700"
-              >
-                TAKS (Taban Alanı Katsayısı)
-                <span className="ml-1 text-red-500">*</span>
-              </label>
-              <div className="mt-1 flex items-center">
-                <input
-                  type="text"
-                  inputMode="decimal"
-                  id="taks"
-                  name="taks"
-                  value={taksInput}
-                  onChange={(e) => handleTaksChange(e.target.value)}
-                  onBlur={handleTaksBlur}
-                  placeholder={`örn: ${municipalityConfig.typicalTaks}`}
-                  className={`block w-full rounded-lg border ${
-                    fieldErrors.taks
-                      ? 'border-red-300 focus:border-red-500 focus:ring-red-500'
-                      : 'border-gray-300 focus:border-blue-500 focus:ring-blue-500'
-                  } px-3 py-2 shadow-sm focus:outline-none focus:ring-1`}
-                  disabled={isLoading}
-                />
-                <span className="ml-2 text-sm text-gray-500">
-                  (0.05 - 0.70)
-                </span>
-              </div>
-              {fieldErrors.taks && (
-                <p className="mt-1 text-sm text-red-600">{fieldErrors.taks}</p>
-              )}
-              <p className="mt-1 text-xs text-gray-600">
-                Binanın zemin kat alanının parsel alanına oranı
-              </p>
-            </div>
+            <DecimalInput
+              value={values.taks}
+              onChange={(val) => setValue('taks', val ?? undefined)}
+              min={IMAR_VALIDATION.taks.min}
+              max={IMAR_VALIDATION.taks.max}
+              step={IMAR_VALIDATION.taks.step}
+              placeholder={`örn: ${municipalityConfig.typicalTaks}`}
+              label="TAKS (Taban Alanı Kat Sayısı)"
+              error={fieldErrors.taks}
+              disabled={isLoading}
+              required
+            />
 
             {/* KAKS Input */}
-            <div>
-              <label
-                htmlFor="kaks"
-                className="block text-sm font-medium text-gray-700"
-              >
-                KAKS / EMSAL (Kat Alanı Katsayısı)
-                <span className="ml-1 text-red-500">*</span>
-              </label>
-              <div className="mt-1 flex items-center">
-                <input
-                  type="text"
-                  inputMode="decimal"
-                  id="kaks"
-                  name="kaks"
-                  value={kaksInput}
-                  onChange={(e) => handleKaksChange(e.target.value)}
-                  onBlur={handleKaksBlur}
-                  placeholder={`örn: ${municipalityConfig.typicalKaks}`}
-                  className={`block w-full rounded-lg border ${
-                    fieldErrors.kaks
-                      ? 'border-red-300 focus:border-red-500 focus:ring-red-500'
-                      : 'border-gray-300 focus:border-blue-500 focus:ring-blue-500'
-                  } px-3 py-2 shadow-sm focus:outline-none focus:ring-1`}
-                  disabled={isLoading}
-                />
-                <span className="ml-2 text-sm text-gray-500">
-                  (0.10 - 3.00)
-                </span>
-              </div>
-              {fieldErrors.kaks && (
-                <p className="mt-1 text-sm text-red-600">{fieldErrors.kaks}</p>
-              )}
-              <p className="mt-1 text-xs text-gray-600">
-                Toplam inşaat alanının parsel alanına oranı
-              </p>
-            </div>
+            <DecimalInput
+              value={values.kaks}
+              onChange={(val) => setValue('kaks', val ?? undefined)}
+              min={IMAR_VALIDATION.kaks.min}
+              max={IMAR_VALIDATION.kaks.max}
+              step={IMAR_VALIDATION.kaks.step}
+              placeholder={`örn: ${municipalityConfig.typicalKaks}`}
+              label="KAKS / Emsal"
+              error={fieldErrors.kaks}
+              disabled={isLoading}
+              required
+            />
 
             {/* Kat Adedi Input */}
-            <div>
-              <label
-                htmlFor="katAdedi"
-                className="block text-sm font-medium text-gray-700"
-              >
-                Kat Adedi (Maksimum Kat Sayısı)
-                <span className="ml-1 text-red-500">*</span>
-              </label>
-              <div className="mt-1 flex items-center">
-                <input
-                  type="text"
-                  inputMode="numeric"
-                  id="katAdedi"
-                  name="katAdedi"
-                  value={katAdediInput}
-                  onChange={(e) => handleKatAdediChange(e.target.value)}
-                  onBlur={handleKatAdediBlur}
-                  placeholder={`örn: ${municipalityConfig.typicalKatAdedi}`}
-                  className={`block w-full rounded-lg border ${
-                    fieldErrors.katAdedi
-                      ? 'border-red-300 focus:border-red-500 focus:ring-red-500'
-                      : 'border-gray-300 focus:border-blue-500 focus:ring-blue-500'
-                  } px-3 py-2 shadow-sm focus:outline-none focus:ring-1`}
-                  disabled={isLoading}
-                />
-                <span className="ml-2 text-sm text-gray-500">(1 - 15)</span>
-              </div>
-              {fieldErrors.katAdedi && (
-                <p className="mt-1 text-sm text-red-600">
-                  {fieldErrors.katAdedi}
-                </p>
-              )}
-              <p className="mt-1 text-xs text-gray-600">
-                İzin verilen maksimum kat sayısı
-              </p>
-            </div>
+            <DecimalInput
+              value={values.katAdedi}
+              onChange={(val) => setValue('katAdedi', val ?? undefined)}
+              min={IMAR_VALIDATION.katAdedi.min}
+              max={IMAR_VALIDATION.katAdedi.max}
+              step={IMAR_VALIDATION.katAdedi.step}
+              placeholder={`örn: ${municipalityConfig.typicalKatAdedi}`}
+              label="Yençok (Kat Adedi)"
+              error={fieldErrors.katAdedi}
+              disabled={isLoading}
+              required
+            />
           </div>
         </div>
 
