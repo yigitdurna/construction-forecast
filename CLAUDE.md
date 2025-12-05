@@ -15,20 +15,25 @@ Target user: Land owners, developers, and construction companies who need accura
 
 **Deployed**: https://yigitdurna.github.io/construction-forecast/
 
-**Phase 2.2 - Municipality İmar Durumu Integration (IN PROGRESS - December 5, 2025):**
+**Phase 2.2 - Municipality İmar Durumu Integration (DEPLOYED - December 5, 2025):**
 - ✅ **İmar Durumu Types**: Complete TypeScript interfaces for municipality zoning data
-- ✅ **Kepez KEOS Implementation** (December 5, 2025):
+- ✅ **Kepez KEOS Implementation** (DEPLOYED - December 5, 2025):
   - ✅ 2-step API flow discovered and implemented (search → parselid → İmar data)
+  - ✅ Correct API endpoints verified from browser inspection
+    - Search: `imarsvc.aspx?type=adaparsel&adaparsel={ada}/{parsel}&ilce=-100000&tmahalle=-100000`
+    - İmar: `imar.aspx?parselid={parselid}`
   - ✅ Div-table HTML structure verified and parser updated
   - ✅ Value parsing rules for KEOS formats ("MAX=", "T.İ.A.:", "-------", Turkish decimals)
-  - ✅ Serverless proxy with complete 2-step flow
+  - ✅ Serverless proxy deployed to Vercel with auto-detection
+  - ✅ Multiple parselid extraction patterns (input field, JSON, plain text)
   - ✅ Test case: Ada 25044, Parsel 1 → parselid 30681
+  - ⏳ **READY FOR TESTING**: Live at `/api/municipalities/kepez`
 - ✅ **KEOS Parser**: Label-based extraction with KEOS-specific value parsing
-- ✅ **Municipality Services**: Kepez (verified), Konyaaltı (ready), Muratpaşa (stub)
+- ✅ **Municipality Services**: Kepez (deployed), Konyaaltı (ready), Muratpaşa (stub)
 - ✅ **Unified Service Interface**: Single entry point with fallback to manual entry
 - ⏳ **Konyaaltı Implementation**: Same KEOS system as Kepez, needs testing
 - ⏳ **KBS Parser**: Muratpaşa system needs separate parser implementation
-- ⏳ **End-to-End Testing**: Full workflow from Ada/Parsel to results (awaiting deployment)
+- ⏳ **End-to-End Testing**: Ready for testing on Vercel deployment
 
 **Phase 2.1 - TKGM + Zoning Calculator Foundation (COMPLETE - December 5, 2025):**
 - ✅ **Zoning Type Definitions**: Complete TypeScript interfaces for TKGM, zoning calculations, unit mix
