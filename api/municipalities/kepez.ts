@@ -118,8 +118,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // Step 2: Fetch İmar data using parselid
 
     // STEP 1: Search for parselid
-    // Format: imarsvc.aspx?type=adaparsel&adaparsel={ada}/{parsel}&ilce=-100000&tmahalle=-100000
-    const searchUrl = `${KEPEZ_KEOS_URL}imarsvc.aspx?type=adaparsel&adaparsel=${adaStr}/${parselStr}&ilce=-100000&tmahalle=-100000`;
+    // Format: imarsvc.aspx?type=adaparsel&adaparsel={ada}/{parsel}&ilce=-100000&tmahalle=-100000&tamKelimeAra=true
+    const searchUrl = `${KEPEZ_KEOS_URL}imarsvc.aspx?type=adaparsel&adaparsel=${adaStr}/${parselStr}&ilce=-100000&tmahalle=-100000&tamKelimeAra=true`;
 
     console.log('[Kepez] ===== STEP 1: SEARCH FOR PARSELID =====');
     console.log('[Kepez] Base URL:', KEPEZ_KEOS_URL);
@@ -133,7 +133,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         method: 'GET',
         headers: {
           'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+          'Accept': 'application/json, text/html, */*',
           'Accept-Language': 'tr-TR,tr;q=0.9,en-US;q=0.8,en;q=0.7',
           'Accept-Encoding': 'gzip, deflate, br',
           'Referer': 'https://keos.kepez-bld.gov.tr/imardurumu/',
@@ -152,46 +152,51 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       throw new Error(`Kepez search API HTTP ${searchResponse.status}: ${searchResponse.statusText}`);
     }
 
-    const searchHtml = await searchResponse.text();
-    console.log('[Kepez] Search HTML length:', searchHtml.length);
-    console.log('[Kepez] Search HTML preview:', searchHtml.substring(0, 500));
+    const searchText = await searchResponse.text();
+    console.log('[Kepez] Search response length:', searchText.length);
+    console.log('[Kepez] Search response preview:', searchText.substring(0, 500));
 
-    // Extract parselid from response
-    // The API may return parselid in various formats - try multiple patterns
+    // Extract parselid from JSON response
+    // Expected format: [{"ADAPARSEL":"25044/1","TAPU_MAH_ADI":"AHATLI","ADA":"25044","PARSEL":"1","PARSELID":30681}]
     let parselId: string | null = null;
 
-    // Pattern 1: Hidden input field
-    const inputMatch = searchHtml.match(
-      /<input[^>]*(?:name|id)="parselid"[^>]*value="(\d+)"[^>]*>/i
-    );
-    if (inputMatch && inputMatch[1]) {
-      parselId = inputMatch[1];
-      console.log('[Kepez] Found parselId via input field pattern:', parselId);
-    }
+    try {
+      // Parse JSON array response
+      const jsonData = JSON.parse(searchText);
+      console.log('[Kepez] Parsed JSON data:', JSON.stringify(jsonData));
 
-    // Pattern 2: JSON response
-    if (!parselId) {
-      try {
-        const jsonData = JSON.parse(searchHtml);
-        if (jsonData.parselid || jsonData.parselId || jsonData.PARSELID) {
-          parselId = String(jsonData.parselid || jsonData.parselId || jsonData.PARSELID);
-          console.log('[Kepez] Found parselId via JSON pattern:', parselId);
-        }
-      } catch {
-        // Not JSON, continue
+      // Check if response is an array
+      if (!Array.isArray(jsonData)) {
+        throw new Error('Yanıt bir dizi değil');
       }
-    }
 
-    // Pattern 3: Direct number in response (if simple text response)
-    if (!parselId && /^\d+$/.test(searchHtml.trim())) {
-      parselId = searchHtml.trim();
-      console.log('[Kepez] Found parselId via direct number pattern:', parselId);
+      // Check if array is empty (no results found)
+      if (jsonData.length === 0) {
+        throw new Error('Ada/Parsel numarası için kayıt bulunamadı. Numara hatalı olabilir.');
+      }
+
+      // Extract PARSELID from first element
+      const firstResult = jsonData[0];
+      if (!firstResult.PARSELID) {
+        console.error('[Kepez] JSON response missing PARSELID:', firstResult);
+        throw new Error('Yanıtta PARSELID bulunamadı');
+      }
+
+      parselId = String(firstResult.PARSELID);
+      console.log('[Kepez] Successfully extracted PARSELID:', parselId);
+      console.log('[Kepez] Full result:', firstResult);
+    } catch (error) {
+      console.error('[Kepez] Failed to parse JSON response:', error);
+      console.error('[Kepez] Full response text:', searchText);
+
+      if (error instanceof Error) {
+        throw new Error(`Kepez search yanıtı işlenemedi: ${error.message}`);
+      }
+      throw new Error('Kepez search yanıtı JSON formatında değil');
     }
 
     if (!parselId) {
-      console.error('[Kepez] Failed to extract parselId from response');
-      console.error('[Kepez] Full HTML:', searchHtml);
-      throw new Error('Parsel ID bulunamadı. Ada/Parsel numarası hatalı olabilir.');
+      throw new Error('Parsel ID çıkarılamadı. Ada/Parsel numarası hatalı olabilir.');
     }
 
     // STEP 2: Fetch İmar data using parselid
