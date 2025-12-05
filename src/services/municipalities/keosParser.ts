@@ -20,25 +20,16 @@ import type {
 } from '../../types/zoning';
 
 /**
- * KEOS selectors - VERIFIED from Kepez system inspection (December 2025)
+ * KEOS HTML Structure - VERIFIED from Kepez system inspection (December 2025)
  *
- * Structure: Div-based table with labels and content cells
- * Container: #bodycontainer or .zoning-body
- * Rows: .divTableRow
- * Labels: .divTableCellLabel or .divTableCellLabel.table-subtitle
- * Values: .divTableContent
+ * Div-based table with labels and content cells:
+ * - Container: #bodycontainer or .zoning-body
+ * - Rows: .divTableRow
+ * - Labels: .divTableCellLabel or .divTableCellLabel.table-subtitle
+ * - Values: .divTableContent
+ *
+ * We use label-based extraction instead of CSS selectors for maximum reliability.
  */
-const DEFAULT_KEOS_SELECTORS: MunicipalitySelectors = {
-  // Result selectors (verified working)
-  taksSelector: '.divTableContent', // Will extract by label matching
-  kaksSelector: '.divTableContent',
-  emsalSelector: '.divTableContent',
-  cikmaSelector: '.divTableContent',
-  maxYukseklikSelector: '.divTableContent',
-  maxKatAdediSelector: '.divTableContent',
-  imarDurumuSelector: '.divTableContent',
-  planNotuSelector: '.divTableContent',
-};
 
 /**
  * Parse numeric value from KEOS text format
@@ -141,25 +132,6 @@ function extractByLabel(html: string, label: string): string | null {
 }
 
 /**
- * Extract text content from HTML element using selector
- *
- * This is a placeholder implementation. In production, you would use:
- * - cheerio (server-side)
- * - DOMParser (client-side)
- * - Regular expressions (last resort)
- *
- * @param html - HTML string
- * @param selector - CSS selector
- * @returns Extracted text or null
- */
-function extractText(html: string, selector: string): string | null {
-  // For KEOS, we no longer use this - we use extractByLabel instead
-  // But keep it as fallback
-  console.warn('extractText called - consider using extractByLabel for KEOS');
-  return null;
-}
-
-/**
  * Parse KEOS HTML response to extract İmar Durumu data
  *
  * @param html - HTML response from KEOS system
@@ -169,10 +141,9 @@ function extractText(html: string, selector: string): string | null {
  */
 export function parseKEOSResponse(
   html: string,
-  district: 'kepez' | 'konyaalti',
-  customSelectors?: Partial<MunicipalitySelectors>
+  _district: 'kepez' | 'konyaalti',
+  _customSelectors?: Partial<MunicipalitySelectors>
 ): ParsedImarData {
-  const selectors = { ...DEFAULT_KEOS_SELECTORS, ...customSelectors };
   const parseErrors: string[] = [];
   const rawValues: { [key: string]: string } = {};
 

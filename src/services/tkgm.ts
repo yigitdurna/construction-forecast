@@ -123,34 +123,6 @@ export function validateAdaParsel(ada: string, parsel: string): AdaParselValidat
 }
 
 /**
- * Build TKGM API endpoint URL
- *
- * ⚠️ TODO: Update this function once the actual endpoint format is confirmed
- *
- * Possible formats:
- * 1. /api/parsel/{ada}/{parsel}
- * 2. /api/parsel/{il}/{ilce}/{mahalle}/{ada}/{parsel}
- * 3. /api/parsel?ada={ada}&parsel={parsel}&ilce={ilce}
- *
- * @param ada - Ada (block) number
- * @param parsel - Parsel (parcel) number
- * @param ilce - İlçe (district) name (optional)
- * @returns Full API endpoint URL
- */
-function buildTKGMEndpoint(ada: string, parsel: string, ilce?: string): string {
-  // TODO: Update this once API format is confirmed
-  // Currently trying path-based format as first attempt
-  const endpoint = `${TKGM_API_BASE}/parsel/${ada}/${parsel}`;
-
-  // If ilce is provided, add as query parameter
-  if (ilce) {
-    return `${endpoint}?ilce=${encodeURIComponent(ilce)}`;
-  }
-
-  return endpoint;
-}
-
-/**
  * Build alternative TKGM endpoint formats to try if primary fails
  *
  * @param ada - Ada number
@@ -208,7 +180,6 @@ function transformTKGMResponse(
       ? {
           emsal: response.IMAR_DURUMU.EMSAL ?? response.IMAR_DURUMU.KAKS,
           taks: response.IMAR_DURUMU.TAKS,
-          kaks: response.IMAR_DURUMU.KAKS ?? response.IMAR_DURUMU.EMSAL,
           cikmaKatsayisi: response.IMAR_DURUMU.CIKMA_KATSAYISI,
           maxKatSayisi: response.IMAR_DURUMU.MAX_KAT_SAYISI,
           maxYukseklik: response.IMAR_DURUMU.MAX_YUKSEKLIK,
@@ -462,6 +433,7 @@ export function createManualParcelData(
   imar?: {
     emsal?: number;
     taks?: number;
+    cikmaKatsayisi?: number;
     maxKatSayisi?: number;
     maxYukseklik?: number;
   }
@@ -476,7 +448,7 @@ export function createManualParcelData(
       ? {
           emsal: imar.emsal,
           taks: imar.taks,
-          kaks: imar.emsal, // KAKS = EMSAL
+          cikmaKatsayisi: imar.cikmaKatsayisi,
           maxKatSayisi: imar.maxKatSayisi,
           maxYukseklik: imar.maxYukseklik,
         }

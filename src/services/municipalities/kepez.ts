@@ -27,11 +27,6 @@ import {
 } from './keosParser';
 
 /**
- * Kepez KEOS base URL
- */
-const KEPEZ_KEOS_URL = 'https://keos.kepez-bld.gov.tr/imardurumu/';
-
-/**
  * Timeout for Kepez requests (milliseconds)
  */
 const KEPEZ_TIMEOUT_MS = 15000; // 15 seconds

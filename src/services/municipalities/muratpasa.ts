@@ -20,11 +20,6 @@
 import type { ImarDurumu, ImarDurumuResponse } from '../../types/zoning';
 
 /**
- * Muratpaşa/Antalya KBS base URL
- */
-const MURATPASA_KBS_URL = 'https://kbs.antalya.bel.tr/imardurumu/';
-
-/**
  * Timeout for requests
  */
 const MURATPASA_TIMEOUT_MS = 15000; // 15 seconds

@@ -10,7 +10,6 @@
 
 import type {
   UnitTypeCode,
-  UnitType,
   UnitMixConfig,
   UnitAllocation,
   UnitMixResult,
@@ -80,7 +79,6 @@ export function calculateUnitMix(
   for (const unitType of unitTypes) {
     const ratio = mixRatios[unitType] ?? 0;
     const typicalSize = preferredSizes[unitType] ?? UNIT_SIZE_RANGES[unitType].typical;
-    const netToGross = NET_TO_GROSS_MULTIPLIERS[unitType];
 
     // Estimate how many units of this type based on ratio
     const targetArea = netArea * ratio;
@@ -276,11 +274,11 @@ export function optimizeUnitMixForRevenue(
 /**
  * Generate different mix ratio variations for optimization
  *
- * @param requiredTypes - Unit types that must be included
+ * @param _requiredTypes - Unit types that must be included (reserved for future filtering)
  * @returns Array of mix ratio configurations
  */
 function generateMixVariations(
-  requiredTypes: UnitTypeCode[]
+  _requiredTypes: UnitTypeCode[]
 ): Array<Record<UnitTypeCode, number>> {
   const variations: Array<Record<UnitTypeCode, number>> = [];
 

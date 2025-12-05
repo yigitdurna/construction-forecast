@@ -14,7 +14,6 @@ import type {
   ZoningParams,
   ZoningResult,
   ZoningError,
-  ZoningErrorType,
 } from '../types/zoning';
 import { ZONING_LIMITS } from '../types/zoning';
 
@@ -295,14 +294,14 @@ export function calculateZoning(params: ZoningParams): ZoningResult {
  *
  * Useful for determining if a parcel's zoning is height-limited rather than KAKS-limited
  *
- * @param parselAlani - Land area (m²)
+ * @param _parselAlani - Land area (m²) - reserved for future area-based calculations
  * @param taks - Building coverage ratio
  * @param maxYukseklik - Maximum height (meters)
  * @param floorHeight - Typical floor height (meters, default 3.0)
  * @returns Effective KAKS achievable
  */
 export function calculateEffectiveKAKS(
-  parselAlani: number,
+  _parselAlani: number,
   taks: number,
   maxYukseklik: number,
   floorHeight: number = ZONING_LIMITS.TYPICAL_FLOOR_HEIGHT
@@ -353,7 +352,7 @@ export interface AreaBreakdown {
 
   // Emsal kapsami breakdown
   konutAlani: number;        // Residential area (typically 70-80%)
-  ortak kullanım: number;     // Common areas (corridors, lobbies)
+  ortakKullanim: number;     // Common areas (corridors, lobbies)
   teknikAlan: number;        // Technical spaces (mechanical, electrical)
 
   // Emsal dışı breakdown

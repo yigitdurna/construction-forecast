@@ -28,11 +28,6 @@ import {
 } from './keosParser';
 
 /**
- * Konyaaltı KEOS base URL
- */
-const KONYAALTI_KEOS_URL = 'https://harita.konyaalti.bel.tr/imardurumu/';
-
-/**
  * Timeout for Konyaaltı requests (milliseconds)
  */
 const KONYAALTI_TIMEOUT_MS = 15000; // 15 seconds
