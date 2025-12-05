@@ -119,6 +119,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // Format: imarsvc.aspx?type=adaparsel&adaparsel={ada}/{parsel}&ilce=-100000&tmahalle=-100000
     const searchUrl = `${KEPEZ_KEOS_URL}imarsvc.aspx?type=adaparsel&adaparsel=${adaStr}/${parselStr}&ilce=-100000&tmahalle=-100000`;
 
+    console.log('[Kepez] Step 1: Searching for parselid');
+    console.log('[Kepez] Search URL:', searchUrl);
+
     const searchResponse = await fetchWithTimeout(
       searchUrl,
       {
@@ -126,18 +129,27 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         headers: {
           'Content-Type': 'text/html; charset=utf-8',
           'User-Agent':
-            'Mozilla/5.0 (compatible; ConstructionForecast/2.0)',
-          Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+          'Accept-Language': 'tr-TR,tr;q=0.9,en-US;q=0.8,en;q=0.7',
+          'Accept-Encoding': 'gzip, deflate, br',
         },
       },
       TIMEOUT_MS
     );
 
+    console.log('[Kepez] Search response status:', searchResponse.status);
+    console.log('[Kepez] Search response headers:', Object.fromEntries(searchResponse.headers.entries()));
+
     if (!searchResponse.ok) {
+      const errorBody = await searchResponse.text();
+      console.error('[Kepez] Search error body:', errorBody.substring(0, 500));
       throw new Error(`Kepez search API HTTP ${searchResponse.status}: ${searchResponse.statusText}`);
     }
 
     const searchHtml = await searchResponse.text();
+    console.log('[Kepez] Search HTML length:', searchHtml.length);
+    console.log('[Kepez] Search HTML preview:', searchHtml.substring(0, 500));
 
     // Extract parselid from response
     // The API may return parselid in various formats - try multiple patterns
@@ -149,6 +161,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     );
     if (inputMatch && inputMatch[1]) {
       parselId = inputMatch[1];
+      console.log('[Kepez] Found parselId via input field pattern:', parselId);
     }
 
     // Pattern 2: JSON response
@@ -157,6 +170,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const jsonData = JSON.parse(searchHtml);
         if (jsonData.parselid || jsonData.parselId || jsonData.PARSELID) {
           parselId = String(jsonData.parselid || jsonData.parselId || jsonData.PARSELID);
+          console.log('[Kepez] Found parselId via JSON pattern:', parselId);
         }
       } catch {
         // Not JSON, continue
@@ -166,15 +180,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // Pattern 3: Direct number in response (if simple text response)
     if (!parselId && /^\d+$/.test(searchHtml.trim())) {
       parselId = searchHtml.trim();
+      console.log('[Kepez] Found parselId via direct number pattern:', parselId);
     }
 
     if (!parselId) {
+      console.error('[Kepez] Failed to extract parselId from response');
+      console.error('[Kepez] Full HTML:', searchHtml);
       throw new Error('Parsel ID bulunamadı. Ada/Parsel numarası hatalı olabilir.');
     }
 
     // STEP 2: Fetch İmar data using parselid
     // Format: imar.aspx?parselid={parselid}
     const imarUrl = `${KEPEZ_KEOS_URL}imar.aspx?parselid=${parselId}`;
+
+    console.log('[Kepez] Step 2: Fetching İmar data');
+    console.log('[Kepez] İmar URL:', imarUrl);
 
     const imarResponse = await fetchWithTimeout(
       imarUrl,
@@ -183,20 +203,29 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         headers: {
           'Content-Type': 'text/html; charset=utf-8',
           'User-Agent':
-            'Mozilla/5.0 (compatible; ConstructionForecast/2.0)',
-          Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+          'Accept-Language': 'tr-TR,tr;q=0.9,en-US;q=0.8,en;q=0.7',
+          'Accept-Encoding': 'gzip, deflate, br',
           Referer: searchUrl, // Important: include referer from step 1
         },
       },
       TIMEOUT_MS
     );
 
+    console.log('[Kepez] İmar response status:', imarResponse.status);
+    console.log('[Kepez] İmar response headers:', Object.fromEntries(imarResponse.headers.entries()));
+
     if (!imarResponse.ok) {
+      const errorBody = await imarResponse.text();
+      console.error('[Kepez] İmar error body:', errorBody.substring(0, 500));
       throw new Error(`Kepez İmar API HTTP ${imarResponse.status}: ${imarResponse.statusText}`);
     }
 
     // Get İmar data HTML
     const html = await imarResponse.text();
+    console.log('[Kepez] İmar HTML length:', html.length);
+    console.log('[Kepez] İmar HTML preview:', html.substring(0, 500));
 
     // Return raw HTML for client-side parsing using keosParser
     const result = {
