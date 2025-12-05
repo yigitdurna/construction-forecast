@@ -4,7 +4,7 @@
  * Step 4: Display comprehensive financial analysis with NPV and scenarios
  */
 
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import type {
   ParselImarData,
   UnitMix,
@@ -13,13 +13,6 @@ import type {
   ScenarioResult,
 } from '../../types/feasibility';
 import { WIZARD_TEXT } from '../../types/feasibility';
-import {
-  calculateProjectCosts,
-  calculateFutureSalesPrice,
-  calculateInflationAdjustedCosts,
-  getDefaultTimeline,
-} from '../../utils/calculations';
-import { calculateAllScenarios } from '../../lib/scenarios';
 
 export interface FinancialSummaryProps {
   step1Data: ParselImarData;
@@ -54,8 +47,7 @@ export function FinancialSummary({
     setIsCalculating(true);
 
     try {
-      const { parselData, zoningResult } = step1Data;
-      const { totalGrossArea, totalNetArea } = step2Data;
+      const { totalGrossArea } = step2Data;
       const { constructionCostPerM2, salePrices } = step3Data;
 
       // Calculate total construction cost
@@ -73,9 +65,9 @@ export function FinancialSummary({
       const profitMargin = totalRevenue > 0 ? grossProfit / totalRevenue : 0;
       const roi = totalConstructionCost > 0 ? (grossProfit / totalConstructionCost) * 100 : 0;
 
-      // Get default timeline for NPV calculation
-      const timeline = getDefaultTimeline('Apartman', totalGrossArea);
-      const totalMonths = timeline.constructionMonths + timeline.monthsToSell;
+      // Estimate timeline for NPV calculation (simplified)
+      // For apartments: 18 months construction + 6 months to sell
+      const totalMonths = 24;
 
       // NPV-adjusted revenue (1% monthly discount rate)
       const discountRate = 0.01;

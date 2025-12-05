@@ -45,7 +45,6 @@ export function ImarManualEntry({
     isComplete,
     fieldErrors,
     setValue,
-    setValues,
   } = useImarValidation({
     initialValues: cachedEntry?.imarData || {},
     validateOnChange: true,

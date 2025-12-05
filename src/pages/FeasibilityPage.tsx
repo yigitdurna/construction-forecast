@@ -4,7 +4,6 @@
  * Main page for Phase 2.3 - Complete feasibility wizard
  */
 
-import React from 'react';
 import { FeasibilityProvider } from '../context/FeasibilityContext';
 import { FeasibilityWizard } from '../components/phase2/FeasibilityWizard';
 

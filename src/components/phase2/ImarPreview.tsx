@@ -5,7 +5,6 @@
  * Displays calculated areas and validation status
  */
 
-import React from 'react';
 import type { ManualImarParams } from '../../utils/imarValidation';
 
 export interface ImarPreviewProps {

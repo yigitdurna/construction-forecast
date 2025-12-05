@@ -146,8 +146,8 @@ export function getTypicalImarValues(ilce: string): {
  */
 export function getImarQueryUrl(
   ilce: string,
-  ada?: string,
-  parsel?: string
+  _ada?: string,
+  _parsel?: string
 ): string {
   const config = getMunicipalityConfig(ilce);
 

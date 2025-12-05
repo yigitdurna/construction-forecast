@@ -4,7 +4,7 @@
  * Step 3: Configure construction quality and sale prices
  */
 
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import type {
   UnitMix,
   PricingConfig,

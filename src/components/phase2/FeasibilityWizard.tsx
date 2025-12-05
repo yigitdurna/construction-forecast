@@ -4,7 +4,6 @@
  * Main container for the 4-step feasibility analysis wizard
  */
 
-import React from 'react';
 import { useFeasibility } from '../../context/FeasibilityContext';
 import { StepIndicator } from './StepIndicator';
 import { ParselLookupWithImar } from './ParselLookupWithImar';
@@ -237,7 +236,7 @@ export function FeasibilityWizard(): JSX.Element {
             {WIZARD_TEXT.buttons.next}
           </button>
         ) : (
-          <div className="w-32"></div> {/* Spacer */}
+          <div className="w-32" />
         )}
       </div>
 

@@ -4,7 +4,7 @@
  * Step 2: Configure apartment unit distribution
  */
 
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import type { UnitTypeCode, UnitConfig, UnitMix } from '../../types/feasibility';
 import {
   DEFAULT_UNIT_SIZES,
@@ -55,7 +55,7 @@ export function UnitMixEditor({
     return calculateDefaultCounts(availableArea);
   });
 
-  const [unitSizes, setUnitSizes] = useState<Record<UnitTypeCode, number>>(
+  const [unitSizes] = useState<Record<UnitTypeCode, number>>(
     DEFAULT_UNIT_SIZES
   );
 
@@ -73,9 +73,9 @@ export function UnitMixEditor({
 
     // Start with ratios
     unitTypes.forEach((type) => {
-      const ratio = DEFAULT_MIX_RATIOS[type];
+      const ratio = DEFAULT_MIX_RATIOS[type as UnitTypeCode];
       const targetArea = area * ratio;
-      const unitSize = DEFAULT_UNIT_SIZES[type];
+      const unitSize = DEFAULT_UNIT_SIZES[type as UnitTypeCode];
       counts[type] = Math.floor(targetArea / unitSize);
     });
 

@@ -7,6 +7,9 @@
 import type { ZoningResult, UnitTypeCode } from './zoning';
 import type { ManualImarParams } from '../utils/imarValidation';
 
+// Re-export types from other modules for convenience
+export type { UnitTypeCode, ZoningResult, ManualImarParams };
+
 // ============================================================================
 // Wizard Step Types
 // ============================================================================

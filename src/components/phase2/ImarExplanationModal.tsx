@@ -5,7 +5,6 @@
  * Helps users understand what they're entering
  */
 
-import React from 'react';
 
 export interface ImarExplanationModalProps {
   isOpen: boolean;

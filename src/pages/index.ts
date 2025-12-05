@@ -5,4 +5,3 @@
  */
 
 export { FeasibilityPage } from './FeasibilityPage';
-export default FeasibilityPage;

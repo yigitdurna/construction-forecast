@@ -4,7 +4,7 @@
  * Visual progress bar for the feasibility wizard
  */
 
-import React from 'react';
+import { Fragment } from 'react';
 import type { WizardStep } from '../../types/feasibility';
 import { WIZARD_STEP_LABELS } from '../../types/feasibility';
 
@@ -42,7 +42,7 @@ export function StepIndicator({
           const isClickable = isComplete || isCurrent;
 
           return (
-            <React.Fragment key={step}>
+            <Fragment key={step}>
               {/* Step Circle */}
               <div className="flex flex-col items-center">
                 <button
@@ -106,7 +106,7 @@ export function StepIndicator({
                   }`}
                 />
               )}
-            </React.Fragment>
+            </Fragment>
           );
         })}
       </div>

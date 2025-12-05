@@ -10,7 +10,7 @@
  * This is the main entry point for Phase 2 workflow
  */
 
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { ImarManualEntry } from './ImarManualEntry';
 import { calculateZoning } from '../../services/zoningCalculator';
 import type { ManualImarParams } from '../../utils/imarValidation';
