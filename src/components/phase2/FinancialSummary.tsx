@@ -5,6 +5,10 @@
  */
 
 import { useState, useEffect } from 'react';
+import { useFeasibility } from '../../context/FeasibilityContext';
+import { useProjectStorage } from '../../hooks/useProjectStorage';
+import { wizardStateToProject } from '../../utils/projectConverter';
+import { generateFeasibilityPDF } from '../../services/pdfExport';
 import type {
   ParselImarData,
   UnitMix,
@@ -30,10 +34,13 @@ export function FinancialSummary({
   step3Data,
   onResultChange,
 }: FinancialSummaryProps): JSX.Element {
+  const { state, currentProjectId } = useFeasibility();
+  const { getProject } = useProjectStorage();
   const [financialResult, setFinancialResult] = useState<FinancialResult | null>(
     null
   );
   const [isCalculating, setIsCalculating] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
 
   // Calculate financial metrics on mount or when inputs change
   useEffect(() => {
@@ -142,6 +149,35 @@ export function FinancialSummary({
       console.error('Financial calculation error:', error);
     } finally {
       setIsCalculating(false);
+    }
+  }
+
+  /**
+   * Handle PDF export
+   */
+  async function handleExportPDF() {
+    if (!financialResult) return;
+
+    setIsExporting(true);
+    try {
+      // Get or create project from current state
+      let project;
+      if (currentProjectId) {
+        project = getProject(currentProjectId);
+      }
+
+      if (!project) {
+        // Create temporary project from current wizard state
+        project = wizardStateToProject(state);
+      }
+
+      // Generate PDF
+      await generateFeasibilityPDF(project, financialResult);
+    } catch (error) {
+      console.error('PDF export error:', error);
+      alert('PDF oluşturulurken bir hata oluştu. Lütfen tekrar deneyin.');
+    } finally {
+      setIsExporting(false);
     }
   }
 
@@ -375,10 +411,37 @@ export function FinancialSummary({
       {/* Export Button */}
       <div className="flex justify-center">
         <button
-          onClick={() => alert('PDF export özelliği yakında eklenecek')}
-          className="rounded-lg bg-blue-600 px-6 py-3 text-white hover:bg-blue-700 disabled:opacity-50"
+          onClick={handleExportPDF}
+          disabled={isExporting}
+          className="inline-flex items-center rounded-lg bg-blue-600 px-6 py-3 text-white hover:bg-blue-700 disabled:opacity-50"
         >
-          {WIZARD_TEXT.buttons.export}
+          {isExporting ? (
+            <>
+              <svg
+                className="mr-2 h-4 w-4 animate-spin"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <circle
+                  className="opacity-25"
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  strokeWidth="4"
+                />
+                <path
+                  className="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                />
+              </svg>
+              Oluşturuluyor...
+            </>
+          ) : (
+            WIZARD_TEXT.buttons.export
+          )}
         </button>
       </div>
     </div>
