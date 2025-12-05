@@ -125,26 +125,33 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     console.log('[Kepez] Base URL:', KEPEZ_KEOS_URL);
     console.log('[Kepez] Ada/Parsel format:', `${adaStr}/${parselStr}`);
     console.log('[Kepez] FINAL SEARCH URL:', searchUrl);
+
+    // SOLUTION 1: Add X-Requested-With header for AJAX requests
+    const searchHeaders = {
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+      'Accept': 'application/json, text/html, */*',
+      'Accept-Language': 'tr-TR,tr;q=0.9,en-US;q=0.8,en;q=0.7',
+      'Accept-Encoding': 'gzip, deflate, br',
+      'Referer': 'https://keos.kepez-bld.gov.tr/imardurumu/',
+      'Origin': 'https://keos.kepez-bld.gov.tr',
+      'X-Requested-With': 'XMLHttpRequest',  // SOLUTION 1: Add AJAX header
+    };
+
+    console.log('[Kepez] Request headers:', JSON.stringify(searchHeaders, null, 2));
     console.log('[Kepez] About to fetch...');
 
     const searchResponse = await fetchWithTimeout(
       searchUrl,
       {
         method: 'GET',
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-          'Accept': 'application/json, text/html, */*',
-          'Accept-Language': 'tr-TR,tr;q=0.9,en-US;q=0.8,en;q=0.7',
-          'Accept-Encoding': 'gzip, deflate, br',
-          'Referer': 'https://keos.kepez-bld.gov.tr/imardurumu/',
-          'Origin': 'https://keos.kepez-bld.gov.tr',
-        },
+        headers: searchHeaders,
       },
       TIMEOUT_MS
     );
 
     console.log('[Kepez] Search response status:', searchResponse.status);
     console.log('[Kepez] Search response headers:', Object.fromEntries(searchResponse.headers.entries()));
+    console.log('[Kepez] Search response Set-Cookie:', searchResponse.headers.get('set-cookie') || 'none');
 
     if (!searchResponse.ok) {
       const errorBody = await searchResponse.text();
@@ -206,26 +213,33 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     console.log('[Kepez] ===== STEP 2: FETCH İMAR DATA =====');
     console.log('[Kepez] Extracted parselId:', parselId);
     console.log('[Kepez] FINAL İMAR URL:', imarUrl);
+
+    // SOLUTION 1: Add X-Requested-With header for AJAX requests
+    const imarHeaders = {
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+      'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+      'Accept-Language': 'tr-TR,tr;q=0.9,en-US;q=0.8,en;q=0.7',
+      'Accept-Encoding': 'gzip, deflate, br',
+      'Referer': 'https://keos.kepez-bld.gov.tr/imardurumu/',
+      'Origin': 'https://keos.kepez-bld.gov.tr',
+      'X-Requested-With': 'XMLHttpRequest',  // SOLUTION 1: Add AJAX header
+    };
+
+    console.log('[Kepez] Request headers:', JSON.stringify(imarHeaders, null, 2));
     console.log('[Kepez] About to fetch...');
 
     const imarResponse = await fetchWithTimeout(
       imarUrl,
       {
         method: 'GET',
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-          'Accept-Language': 'tr-TR,tr;q=0.9,en-US;q=0.8,en;q=0.7',
-          'Accept-Encoding': 'gzip, deflate, br',
-          'Referer': 'https://keos.kepez-bld.gov.tr/imardurumu/',
-          'Origin': 'https://keos.kepez-bld.gov.tr',
-        },
+        headers: imarHeaders,
       },
       TIMEOUT_MS
     );
 
     console.log('[Kepez] İmar response status:', imarResponse.status);
     console.log('[Kepez] İmar response headers:', Object.fromEntries(imarResponse.headers.entries()));
+    console.log('[Kepez] İmar response Set-Cookie:', imarResponse.headers.get('set-cookie') || 'none');
 
     if (!imarResponse.ok) {
       const errorBody = await imarResponse.text();
