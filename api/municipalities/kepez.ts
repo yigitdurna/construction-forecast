@@ -98,6 +98,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const adaStr = Array.isArray(ada) ? ada[0] : ada;
   const parselStr = Array.isArray(parsel) ? parsel[0] : parsel;
 
+  console.log('[Kepez] Input parameters:', { mahalle: mahalleStr, ada: adaStr, parsel: parselStr });
+
   // Check cache
   const cacheKey = `${mahalleStr}-${adaStr}-${parselStr}`;
   const cached = cache.get(cacheKey);
@@ -119,8 +121,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // Format: imarsvc.aspx?type=adaparsel&adaparsel={ada}/{parsel}&ilce=-100000&tmahalle=-100000
     const searchUrl = `${KEPEZ_KEOS_URL}imarsvc.aspx?type=adaparsel&adaparsel=${adaStr}/${parselStr}&ilce=-100000&tmahalle=-100000`;
 
-    console.log('[Kepez] Step 1: Searching for parselid');
-    console.log('[Kepez] Search URL:', searchUrl);
+    console.log('[Kepez] ===== STEP 1: SEARCH FOR PARSELID =====');
+    console.log('[Kepez] Base URL:', KEPEZ_KEOS_URL);
+    console.log('[Kepez] Ada/Parsel format:', `${adaStr}/${parselStr}`);
+    console.log('[Kepez] FINAL SEARCH URL:', searchUrl);
+    console.log('[Kepez] About to fetch...');
 
     const searchResponse = await fetchWithTimeout(
       searchUrl,
@@ -193,8 +198,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // Format: imar.aspx?parselid={parselid}
     const imarUrl = `${KEPEZ_KEOS_URL}imar.aspx?parselid=${parselId}`;
 
-    console.log('[Kepez] Step 2: Fetching İmar data');
-    console.log('[Kepez] İmar URL:', imarUrl);
+    console.log('[Kepez] ===== STEP 2: FETCH İMAR DATA =====');
+    console.log('[Kepez] Extracted parselId:', parselId);
+    console.log('[Kepez] FINAL İMAR URL:', imarUrl);
+    console.log('[Kepez] About to fetch...');
 
     const imarResponse = await fetchWithTimeout(
       imarUrl,
