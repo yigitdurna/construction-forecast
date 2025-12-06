@@ -63,12 +63,15 @@ export function CostPricingStep({
   // State for cost breakdown
   const [costBreakdown, setCostBreakdown] = useState<CostBreakdownData | null>(null);
 
+  // State for land cost (Phase 3.3)
+  const [landCost, setLandCost] = useState<number>(0);
+
   // State for common area costs
   const [includeCommonAreas, setIncludeCommonAreas] = useState(false);
   const [commonAreaPercent, setCommonAreaPercent] = useState(15);
   const [commonAreaMultiplier, setCommonAreaMultiplier] = useState(1.5);
 
-  // Update pricing config whenever cost breakdown or prices change
+  // Update pricing config whenever cost breakdown, land cost, or prices change
   useEffect(() => {
     // Use cost breakdown if available, otherwise fallback to default mid-tier
     const costPerM2 = costBreakdown
@@ -78,10 +81,11 @@ export function CostPricingStep({
     const config: PricingConfig = {
       constructionQuality: 'mid', // Default to mid quality
       constructionCostPerM2: costPerM2,
+      landCost: landCost > 0 ? landCost : undefined, // Only include if > 0
       salePrices,
     };
     onPricingChange(config);
-  }, [costBreakdown, salePrices, onPricingChange]);
+  }, [costBreakdown, landCost, salePrices, onPricingChange]);
 
   /**
    * Get default sale prices for district
@@ -210,6 +214,39 @@ export function CostPricingStep({
         netArea={unitMix.totalNetArea}
         onCostChange={setCostBreakdown}
       />
+
+      {/* Land Cost Input - Phase 3.3 */}
+      <div className="rounded-lg border border-orange-200 bg-orange-50 p-6">
+        <div className="flex items-start gap-3">
+          <span className="text-2xl">🏞️</span>
+          <div className="flex-1">
+            <label htmlFor="landCost" className="block text-base font-semibold text-gray-900">
+              Arsa Maliyeti
+            </label>
+            <p className="mt-1 text-xs text-gray-600 mb-3">
+              Arsanın toplam satın alma maliyetini girin (Tapu harçları ve komisyon dahil)
+            </p>
+            <div className="relative">
+              <input
+                type="number"
+                id="landCost"
+                value={landCost || ''}
+                onChange={(e) => setLandCost(Number(e.target.value) || 0)}
+                placeholder="örn: 5000000"
+                min="0"
+                step="100000"
+                className="block w-full rounded-lg border-gray-300 px-4 py-2.5 pr-12 shadow-sm focus:border-orange-500 focus:ring-orange-500"
+              />
+              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-500">₺</span>
+            </div>
+            {landCost > 0 && (
+              <p className="mt-2 text-sm font-medium text-orange-800">
+                Arsa Maliyeti: {landCost.toLocaleString('tr-TR')} ₺
+              </p>
+            )}
+          </div>
+        </div>
+      </div>
 
       {/* Common Area Costs - Optional Feature */}
       <div className="rounded-lg border border-gray-200 bg-white p-6">

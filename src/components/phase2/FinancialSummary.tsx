@@ -54,11 +54,15 @@ export function FinancialSummary({
 
     try {
       const { totalNetArea } = step2Data; // USE NET AREA for both cost and revenue
-      const { constructionCostPerM2, salePrices } = step3Data;
+      const { constructionCostPerM2, salePrices, landCost } = step3Data;
 
       // Calculate total construction cost (FIXED: use NET area, not GROSS)
       // Per user requirement: "for simplicity, this app uses NET usable area for both"
       const totalConstructionCost = totalNetArea * constructionCostPerM2;
+
+      // Phase 3.3: Include land cost in total project cost
+      const landCostValue = landCost || 0;
+      const totalCost = totalConstructionCost + landCostValue;
 
       // Calculate total revenue from unit mix
       const totalRevenue = step2Data.units.reduce((sum, unit) => {
@@ -67,10 +71,10 @@ export function FinancialSummary({
         return sum + unitRevenue;
       }, 0);
 
-      // Basic profit metrics
-      const grossProfit = totalRevenue - totalConstructionCost;
+      // Basic profit metrics (UPDATED: use totalCost instead of just construction cost)
+      const grossProfit = totalRevenue - totalCost;
       const profitMargin = totalRevenue > 0 ? grossProfit / totalRevenue : 0;
-      const roi = totalConstructionCost > 0 ? (grossProfit / totalConstructionCost) * 100 : 0;
+      const roi = totalCost > 0 ? (grossProfit / totalCost) * 100 : 0;
 
       // Estimate timeline for NPV calculation (simplified)
       // For apartments: 18 months construction + 6 months to sell
@@ -79,12 +83,13 @@ export function FinancialSummary({
       // NPV-adjusted revenue (1% monthly discount rate)
       const discountRate = 0.01;
       const npvAdjustedRevenue = totalRevenue / Math.pow(1 + discountRate, totalMonths);
-      const npvProfit = npvAdjustedRevenue - totalConstructionCost;
-      const npvROI = totalConstructionCost > 0 ? (npvProfit / totalConstructionCost) * 100 : 0;
+      const npvProfit = npvAdjustedRevenue - totalCost;
+      const npvROI = totalCost > 0 ? (npvProfit / totalCost) * 100 : 0;
 
       const result: FinancialResult = {
         totalConstructionCost,
-        totalCost: totalConstructionCost,
+        landCost: landCostValue > 0 ? landCostValue : undefined,
+        totalCost,
         totalRevenue: npvAdjustedRevenue,
         grossProfit: npvProfit,
         profitMargin: profitMargin * 100,
@@ -163,13 +168,20 @@ export function FinancialSummary({
       {/* Key Metrics Summary - BIG 4-CARD DISPLAY */}
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
         <div className="rounded-lg border-2 border-gray-300 bg-white p-6 shadow-sm">
-          <p className="text-sm font-medium text-gray-600">💰 Toplam Maliyet</p>
+          <p className="text-sm font-medium text-gray-600">💰 Toplam Proje Maliyeti</p>
           <p className="mt-3 text-2xl font-bold text-gray-900">
-            {financialResult.totalConstructionCost.toLocaleString('tr-TR', { maximumFractionDigits: 0 })} ₺
+            {financialResult.totalCost.toLocaleString('tr-TR', { maximumFractionDigits: 0 })} ₺
           </p>
-          <p className="mt-2 text-xs text-gray-500">
-            ({totalConstructionCostPerM2.toLocaleString('tr-TR', { maximumFractionDigits: 0 })} ₺/m²)
-          </p>
+          {financialResult.landCost && financialResult.landCost > 0 ? (
+            <p className="mt-2 text-xs text-gray-500">
+              İnşaat {financialResult.totalConstructionCost.toLocaleString('tr-TR', { maximumFractionDigits: 0 })} ₺
+              + Arsa {financialResult.landCost.toLocaleString('tr-TR', { maximumFractionDigits: 0 })} ₺
+            </p>
+          ) : (
+            <p className="mt-2 text-xs text-gray-500">
+              ({totalConstructionCostPerM2.toLocaleString('tr-TR', { maximumFractionDigits: 0 })} ₺/m²)
+            </p>
+          )}
         </div>
         <div className="rounded-lg border-2 border-blue-300 bg-blue-50 p-6 shadow-sm">
           <p className="text-sm font-medium text-blue-700">📈 Toplam Satış Geliri</p>

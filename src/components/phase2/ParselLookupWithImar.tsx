@@ -10,7 +10,7 @@
  * This is the main entry point for Phase 2 workflow
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ImarManualEntry } from './ImarManualEntry';
 import { BodrumConfigPanel } from './BodrumConfigPanel';
 import { calculateZoning } from '../../services/zoningCalculator';
@@ -160,6 +160,23 @@ export function ParselLookupWithImar({
     setStep('complete');
   };
 
+  /**
+   * Auto-submit when imar data is complete (Phase 3.3 UX improvement)
+   * This eliminates the need for "İmar Hesaplamasına Devam Et" button
+   */
+  useEffect(() => {
+    if (!parselAlani || !imarData || step !== 'imar') {
+      return;
+    }
+
+    // Auto-submit after a brief delay to allow user to see bodrum panel
+    const timer = setTimeout(() => {
+      handleFinalSubmit();
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [imarData, bodrumConfig]); // Re-run when bodrum config changes
+
   // Step 1: Ada/Parsel input form
   if (step === 'input') {
     return (
@@ -294,46 +311,26 @@ export function ParselLookupWithImar({
           onSubmit={handleImarSubmit}
         />
 
-        {/* Bodrum Configuration (shown after İmar data entered) */}
+        {/* Bodrum Configuration (always shown after İmar data, collapsible) */}
         {imarData && tabanAlani > 0 && (
-          <>
-            <BodrumConfigPanel
-              config={bodrumConfig}
-              tabanAlani={tabanAlani}
-              onChange={setBodrumConfig}
-              className="border-blue-200"
-            />
-
-            {/* Final submit button */}
-            <div className="flex items-center justify-between">
-              <button
-                onClick={() => {
-                  setImarData(null);
-                  setStep('input');
-                }}
-                className="text-sm text-gray-600 hover:text-gray-800"
-              >
-                ← Başa dön
-              </button>
-              <button
-                onClick={handleFinalSubmit}
-                className="rounded-lg bg-blue-600 px-8 py-3 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-              >
-                İmar Hesaplamasına Devam Et →
-              </button>
-            </div>
-          </>
+          <BodrumConfigPanel
+            config={bodrumConfig}
+            tabanAlani={tabanAlani}
+            onChange={setBodrumConfig}
+            className="border-blue-200"
+          />
         )}
 
-        {/* Back button (shown before bodrum config) */}
-        {!imarData && (
-          <button
-            onClick={() => setStep('input')}
-            className="text-sm text-gray-600 hover:text-gray-800"
-          >
-            ← Parsel bilgilerini değiştir
-          </button>
-        )}
+        {/* Back button */}
+        <button
+          onClick={() => {
+            setImarData(null);
+            setStep('input');
+          }}
+          className="text-sm text-gray-600 hover:text-gray-800"
+        >
+          ← Parsel bilgilerini değiştir
+        </button>
       </div>
     );
   }

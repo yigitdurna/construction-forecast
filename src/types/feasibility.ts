@@ -160,6 +160,7 @@ export const QUALITY_TIERS: Record<ConstructionQuality, QualityTier> = {
 export interface PricingConfig {
   constructionQuality: ConstructionQuality;
   constructionCostPerM2: number;
+  landCost?: number; // Optional land/parcel cost in TL
   salePrices: Record<UnitTypeCode, number>; // TL/m² for each unit type
 }
 

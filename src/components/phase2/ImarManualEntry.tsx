@@ -6,7 +6,7 @@
  * Phase 2.2 - Smart manual entry UI with calculation display
  */
 
-import React, { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useImarCache } from '../../hooks/useImarCache';
 import { getMunicipalityConfig } from '../../data/municipalityLinks';
 import { ImarExplanationModal } from './ImarExplanationModal';
@@ -105,12 +105,8 @@ export function ImarManualEntry({
   // Check if form is complete
   const isComplete = validation.isValid && calculatedValues !== null;
 
-  /**
-   * Handle form submission
-   */
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-
+  // Auto-submit when data is complete (Phase 3.3 UX improvement)
+  useEffect(() => {
     if (!isComplete || !taks || !kaks || !calculatedValues) {
       return;
     }
@@ -135,9 +131,9 @@ export function ImarManualEntry({
     };
     saveEntry(ilce, ada, parsel, cacheData, parselAlani);
 
-    // Pass to parent
+    // Pass to parent automatically
     onSubmit(imarData);
-  };
+  }, [isComplete, taks, kaks, cikmaKatsayisi, yencokOverride, hmaxOverride, calculatedValues, parselAlani, ilce, ada, parsel, saveEntry, onSubmit]);
 
 
   return (
@@ -228,8 +224,8 @@ export function ImarManualEntry({
         </div>
       </div>
 
-      {/* Form */}
-      <form onSubmit={handleSubmit} className="space-y-6">
+      {/* Form (no submit - auto-updates) */}
+      <div className="space-y-6">
         {/* User Inputs Section */}
         <div className="rounded-lg border border-gray-200 bg-white p-6">
           <h4 className="text-md font-semibold text-gray-800 mb-4">
@@ -440,8 +436,8 @@ export function ImarManualEntry({
           </div>
         )}
 
-        {/* Submit Button */}
-        <div className="flex items-center justify-between">
+        {/* Help link only - no submit button needed (auto-submits) */}
+        <div className="flex items-center justify-center">
           <button
             type="button"
             onClick={() => setShowExplanation(true)}
@@ -449,19 +445,8 @@ export function ImarManualEntry({
           >
             📖 İmar terimlerini öğren
           </button>
-          <button
-            type="submit"
-            disabled={!isComplete || isLoading}
-            className={`rounded-lg px-8 py-3 text-sm font-semibold text-white shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 ${
-              !isComplete || isLoading
-                ? 'cursor-not-allowed bg-gray-400'
-                : 'bg-blue-600 hover:bg-blue-700 focus:ring-blue-500'
-            }`}
-          >
-            {isLoading ? 'Hesaplanıyor...' : 'Hesapla →'}
-          </button>
         </div>
-      </form>
+      </div>
 
       {/* Explanation Modal */}
       <ImarExplanationModal
