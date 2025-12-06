@@ -14,7 +14,6 @@ import type {
   UnitMix,
   PricingConfig,
   FinancialResult,
-  ScenarioResult,
 } from '../../types/feasibility';
 import { WIZARD_TEXT } from '../../types/feasibility';
 
@@ -54,11 +53,12 @@ export function FinancialSummary({
     setIsCalculating(true);
 
     try {
-      const { totalGrossArea } = step2Data;
+      const { totalNetArea } = step2Data; // USE NET AREA for both cost and revenue
       const { constructionCostPerM2, salePrices } = step3Data;
 
-      // Calculate total construction cost
-      const totalConstructionCost = totalGrossArea * constructionCostPerM2;
+      // Calculate total construction cost (FIXED: use NET area, not GROSS)
+      // Per user requirement: "for simplicity, this app uses NET usable area for both"
+      const totalConstructionCost = totalNetArea * constructionCostPerM2;
 
       // Calculate total revenue from unit mix
       const totalRevenue = step2Data.units.reduce((sum, unit) => {
@@ -82,50 +82,6 @@ export function FinancialSummary({
       const npvProfit = npvAdjustedRevenue - totalConstructionCost;
       const npvROI = totalConstructionCost > 0 ? (npvProfit / totalConstructionCost) * 100 : 0;
 
-      // Calculate scenarios
-      const baseScenario: ScenarioResult = {
-        name: 'Gerçekçi',
-        totalCost: totalConstructionCost,
-        totalRevenue: npvAdjustedRevenue,
-        profit: npvProfit,
-        margin: profitMargin * 100,
-        roi,
-        npvProfit,
-        npvROI,
-      };
-
-      // Optimistic scenario (+8% revenue, -8% cost)
-      const optimisticRevenue = totalRevenue * 1.08;
-      const optimisticCost = totalConstructionCost * 0.92;
-      const optimisticNPV = optimisticRevenue / Math.pow(1 + discountRate, totalMonths);
-      const optimisticProfit = optimisticNPV - optimisticCost;
-      const optimisticScenario: ScenarioResult = {
-        name: 'İyimser',
-        totalCost: optimisticCost,
-        totalRevenue: optimisticNPV,
-        profit: optimisticProfit,
-        margin: optimisticNPV > 0 ? (optimisticProfit / optimisticNPV) * 100 : 0,
-        roi: optimisticCost > 0 ? (optimisticProfit / optimisticCost) * 100 : 0,
-        npvProfit: optimisticProfit,
-        npvROI: optimisticCost > 0 ? (optimisticProfit / optimisticCost) * 100 : 0,
-      };
-
-      // Pessimistic scenario (-8% revenue, +15% cost)
-      const pessimisticRevenue = totalRevenue * 0.92;
-      const pessimisticCost = totalConstructionCost * 1.15;
-      const pessimisticNPV = pessimisticRevenue / Math.pow(1 + discountRate, totalMonths);
-      const pessimisticProfit = pessimisticNPV - pessimisticCost;
-      const pessimisticScenario: ScenarioResult = {
-        name: 'Kötümser',
-        totalCost: pessimisticCost,
-        totalRevenue: pessimisticNPV,
-        profit: pessimisticProfit,
-        margin: pessimisticNPV > 0 ? (pessimisticProfit / pessimisticNPV) * 100 : 0,
-        roi: pessimisticCost > 0 ? (pessimisticProfit / pessimisticCost) * 100 : 0,
-        npvProfit: pessimisticProfit,
-        npvROI: pessimisticCost > 0 ? (pessimisticProfit / pessimisticCost) * 100 : 0,
-      };
-
       const result: FinancialResult = {
         totalConstructionCost,
         totalCost: totalConstructionCost,
@@ -136,11 +92,6 @@ export function FinancialSummary({
         npvAdjustedRevenue,
         npvProfit,
         npvROI,
-        scenarios: {
-          optimistic: optimisticScenario,
-          base: baseScenario,
-          pessimistic: pessimisticScenario,
-        },
       };
 
       setFinancialResult(result);
@@ -192,7 +143,10 @@ export function FinancialSummary({
     );
   }
 
-  const { scenarios } = financialResult;
+  // Calculate per-m² values for display
+  const totalConstructionCostPerM2 = step2Data.totalNetArea > 0
+    ? financialResult.totalConstructionCost / step2Data.totalNetArea
+    : 0;
 
   return (
     <div className="space-y-6">
@@ -202,183 +156,99 @@ export function FinancialSummary({
           {WIZARD_TEXT.step4.title}
         </h3>
         <p className="mt-1 text-sm text-gray-600">
-          {WIZARD_TEXT.step4.description}
+          Proje finansal özeti - Tüm değerler zaman değeri (NPV) ile düzeltilmiştir.
         </p>
       </div>
 
-      {/* Key Metrics Summary */}
-      <div className="rounded-lg border border-gray-200 bg-white p-6">
-        <h4 className="text-base font-semibold text-gray-900 mb-4">
-          {WIZARD_TEXT.step4.summary}
-        </h4>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
-            <p className="text-xs text-gray-600">Toplam Maliyet</p>
-            <p className="mt-2 font-mono text-2xl font-bold text-gray-900">
-              {(financialResult.totalConstructionCost / 1000000).toFixed(1)}M TL
-            </p>
-          </div>
-          <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
-            <p className="text-xs text-gray-600">NPV Gelir</p>
-            <p className="mt-2 font-mono text-2xl font-bold text-blue-600">
-              {(financialResult.npvAdjustedRevenue / 1000000).toFixed(1)}M TL
-            </p>
-          </div>
-          <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
-            <p className="text-xs text-gray-600">NPV Kar</p>
-            <p
-              className={`mt-2 font-mono text-2xl font-bold ${
-                financialResult.npvProfit > 0 ? 'text-green-600' : 'text-red-600'
-              }`}
-            >
-              {(financialResult.npvProfit / 1000000).toFixed(1)}M TL
-            </p>
-          </div>
-          <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
-            <p className="text-xs text-gray-600">Kar Marjı</p>
-            <p
-              className={`mt-2 font-mono text-2xl font-bold ${
-                financialResult.profitMargin > 0 ? 'text-green-600' : 'text-red-600'
-              }`}
-            >
-              {financialResult.profitMargin.toFixed(0)}%
-            </p>
-          </div>
-          <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
-            <p className="text-xs text-gray-600">ROI</p>
-            <p
-              className={`mt-2 font-mono text-2xl font-bold ${
-                financialResult.roi > 0 ? 'text-green-600' : 'text-red-600'
-              }`}
-            >
-              {financialResult.roi.toFixed(0)}%
-            </p>
-          </div>
-          <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
-            <p className="text-xs text-gray-600">NPV ROI</p>
-            <p
-              className={`mt-2 font-mono text-2xl font-bold ${
-                financialResult.npvROI > 0 ? 'text-green-600' : 'text-red-600'
-              }`}
-            >
-              {financialResult.npvROI.toFixed(0)}%
-            </p>
-          </div>
+      {/* Key Metrics Summary - BIG 4-CARD DISPLAY */}
+      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="rounded-lg border-2 border-gray-300 bg-white p-6 shadow-sm">
+          <p className="text-sm font-medium text-gray-600">💰 Toplam Maliyet</p>
+          <p className="mt-3 text-2xl font-bold text-gray-900">
+            {financialResult.totalConstructionCost.toLocaleString('tr-TR', { maximumFractionDigits: 0 })} ₺
+          </p>
+          <p className="mt-2 text-xs text-gray-500">
+            ({totalConstructionCostPerM2.toLocaleString('tr-TR', { maximumFractionDigits: 0 })} ₺/m²)
+          </p>
+        </div>
+        <div className="rounded-lg border-2 border-blue-300 bg-blue-50 p-6 shadow-sm">
+          <p className="text-sm font-medium text-blue-700">📈 Toplam Satış Geliri</p>
+          <p className="mt-3 text-2xl font-bold text-blue-600">
+            {financialResult.npvAdjustedRevenue.toLocaleString('tr-TR', { maximumFractionDigits: 0 })} ₺
+          </p>
+          <p className="mt-2 text-xs text-blue-500">
+            (NPV düzeltmeli)
+          </p>
+        </div>
+        <div className={`rounded-lg border-2 p-6 shadow-sm ${
+          financialResult.npvProfit > 0
+            ? 'border-green-300 bg-green-50'
+            : 'border-red-300 bg-red-50'
+        }`}>
+          <p className={`text-sm font-medium ${
+            financialResult.npvProfit > 0 ? 'text-green-700' : 'text-red-700'
+          }`}>
+            ✨ Net Kar
+          </p>
+          <p className={`mt-3 text-2xl font-bold ${
+            financialResult.npvProfit > 0 ? 'text-green-600' : 'text-red-600'
+          }`}>
+            {financialResult.npvProfit.toLocaleString('tr-TR', { maximumFractionDigits: 0 })} ₺
+          </p>
+          <p className={`mt-2 text-xs ${
+            financialResult.npvProfit > 0 ? 'text-green-500' : 'text-red-500'
+          }`}>
+            (NPV düzeltmeli)
+          </p>
+        </div>
+        <div className={`rounded-lg border-2 p-6 shadow-sm ${
+          financialResult.profitMargin > 0
+            ? 'border-green-300 bg-green-50'
+            : 'border-red-300 bg-red-50'
+        }`}>
+          <p className={`text-sm font-medium ${
+            financialResult.profitMargin > 0 ? 'text-green-700' : 'text-red-700'
+          }`}>
+            📊 Kar Marjı
+          </p>
+          <p className={`mt-3 text-2xl font-bold ${
+            financialResult.profitMargin > 0 ? 'text-green-600' : 'text-red-600'
+          }`}>
+            {financialResult.profitMargin.toFixed(0)}%
+          </p>
         </div>
       </div>
 
-      {/* Scenario Analysis */}
+      {/* Additional Metrics */}
       <div className="rounded-lg border border-gray-200 bg-white p-6">
         <h4 className="text-base font-semibold text-gray-900 mb-4">
-          {WIZARD_TEXT.step4.scenarios}
+          Ek Metrikler
         </h4>
-        <div className="overflow-hidden rounded-lg border border-gray-200">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-600">
-                  Senaryo
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-600">
-                  Maliyet
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-600">
-                  Gelir (NPV)
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-600">
-                  Kar
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-600">
-                  Marj
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-600">
-                  ROI
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200 bg-white">
-              {/* Optimistic */}
-              <tr className="bg-green-50">
-                <td className="whitespace-nowrap px-4 py-3 font-semibold text-green-900">
-                  {scenarios.optimistic.name}
-                </td>
-                <td className="whitespace-nowrap px-4 py-3 font-mono text-sm text-gray-700">
-                  {(scenarios.optimistic.totalCost / 1000000).toFixed(1)}M
-                </td>
-                <td className="whitespace-nowrap px-4 py-3 font-mono text-sm text-gray-700">
-                  {(scenarios.optimistic.totalRevenue / 1000000).toFixed(1)}M
-                </td>
-                <td className="whitespace-nowrap px-4 py-3 font-mono text-sm font-semibold text-green-600">
-                  {(scenarios.optimistic.profit / 1000000).toFixed(1)}M
-                </td>
-                <td className="whitespace-nowrap px-4 py-3 font-mono text-sm text-gray-700">
-                  {scenarios.optimistic.margin.toFixed(0)}%
-                </td>
-                <td className="whitespace-nowrap px-4 py-3 font-mono text-sm text-gray-700">
-                  {scenarios.optimistic.roi.toFixed(0)}%
-                </td>
-              </tr>
-
-              {/* Base */}
-              <tr className="bg-blue-50">
-                <td className="whitespace-nowrap px-4 py-3 font-semibold text-blue-900">
-                  {scenarios.base.name} ⭐
-                </td>
-                <td className="whitespace-nowrap px-4 py-3 font-mono text-sm text-gray-700">
-                  {(scenarios.base.totalCost / 1000000).toFixed(1)}M
-                </td>
-                <td className="whitespace-nowrap px-4 py-3 font-mono text-sm text-gray-700">
-                  {(scenarios.base.totalRevenue / 1000000).toFixed(1)}M
-                </td>
-                <td className="whitespace-nowrap px-4 py-3 font-mono text-sm font-semibold text-blue-600">
-                  {(scenarios.base.profit / 1000000).toFixed(1)}M
-                </td>
-                <td className="whitespace-nowrap px-4 py-3 font-mono text-sm text-gray-700">
-                  {scenarios.base.margin.toFixed(0)}%
-                </td>
-                <td className="whitespace-nowrap px-4 py-3 font-mono text-sm text-gray-700">
-                  {scenarios.base.roi.toFixed(0)}%
-                </td>
-              </tr>
-
-              {/* Pessimistic */}
-              <tr className="bg-red-50">
-                <td className="whitespace-nowrap px-4 py-3 font-semibold text-red-900">
-                  {scenarios.pessimistic.name}
-                </td>
-                <td className="whitespace-nowrap px-4 py-3 font-mono text-sm text-gray-700">
-                  {(scenarios.pessimistic.totalCost / 1000000).toFixed(1)}M
-                </td>
-                <td className="whitespace-nowrap px-4 py-3 font-mono text-sm text-gray-700">
-                  {(scenarios.pessimistic.totalRevenue / 1000000).toFixed(1)}M
-                </td>
-                <td
-                  className={`whitespace-nowrap px-4 py-3 font-mono text-sm font-semibold ${
-                    scenarios.pessimistic.profit > 0
-                      ? 'text-green-600'
-                      : 'text-red-600'
-                  }`}
-                >
-                  {(scenarios.pessimistic.profit / 1000000).toFixed(1)}M
-                </td>
-                <td className="whitespace-nowrap px-4 py-3 font-mono text-sm text-gray-700">
-                  {scenarios.pessimistic.margin.toFixed(0)}%
-                </td>
-                <td className="whitespace-nowrap px-4 py-3 font-mono text-sm text-gray-700">
-                  {scenarios.pessimistic.roi.toFixed(0)}%
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-
-        {/* Scenario Explanation */}
-        <div className="mt-4 rounded-lg bg-blue-50 p-4">
-          <p className="text-sm text-blue-900">
-            <strong>Senaryo Varsayımları:</strong> İyimser (+8% gelir, -8% maliyet),
-            Gerçekçi (girilen değerler), Kötümser (-8% gelir, +15% maliyet). Tüm
-            gelirler NPV ile ayarlanmıştır.
-          </p>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div className="flex justify-between border-b border-gray-200 pb-2">
+            <span className="text-sm text-gray-600">ROI (Yatırım Getirisi)</span>
+            <span className="font-mono text-sm font-semibold text-gray-900">
+              {financialResult.roi.toFixed(1)}%
+            </span>
+          </div>
+          <div className="flex justify-between border-b border-gray-200 pb-2">
+            <span className="text-sm text-gray-600">NPV ROI</span>
+            <span className="font-mono text-sm font-semibold text-gray-900">
+              {financialResult.npvROI.toFixed(1)}%
+            </span>
+          </div>
+          <div className="flex justify-between border-b border-gray-200 pb-2">
+            <span className="text-sm text-gray-600">Proje Süresi</span>
+            <span className="font-mono text-sm font-semibold text-gray-900">
+              24 ay
+            </span>
+          </div>
+          <div className="flex justify-between border-b border-gray-200 pb-2">
+            <span className="text-sm text-gray-600">NPV İskonto Oranı</span>
+            <span className="font-mono text-sm font-semibold text-gray-900">
+              1% / ay
+            </span>
+          </div>
         </div>
       </div>
 

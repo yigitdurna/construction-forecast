@@ -477,7 +477,7 @@ UI badges show data quality to users with color coding.
 - **Parsel**: Parcel number within a block
 - **TAKS (Taban Alanı Kat Sayısı)**: Building Coverage Ratio - % of land covered by ground floor (0.0-1.0)
 - **KAKS (Kat Alanı Kat Sayısı)**: Floor Area Ratio - same as EMSAL (0.0-5.0 typically)
-- **Çıkma Katsayısı**: Projection coefficient for balconies, bay windows (1.0-2.0, typically 1.4-1.8)
+- **Çıkma Katsayısı**: Projection coefficient for balconies, bay windows, terraces - LOCAL Antalya regulation (1.0-2.0, typically 1.70). Applied as simple multiplier to total buildable area (Parsel × KAKS × Çıkma). Source: Antalya Büyükşehir Belediyesi İmar Yönetmeliği (1999), verified via Muratpaşa KEOS and Kent Konseyi 2025
 - **Emsal Dışı Alanlar**: Areas exempt from EMSAL - elevators, stairs, parking, shelters (max 30%)
 - **İmar Durumu**: Zoning status - includes TAKS, KAKS, max height, max floors
 - **Kat Adedi**: Number of floors = KAKS / TAKS (also limited by max height)
@@ -546,8 +546,16 @@ If browser CORS blocks direct API calls, use serverless proxy:
 2. **Toplam İnşaat Alanı** (Total Construction):
    ```
    Toplam = Parsel Alanı × KAKS × Çıkma Katsayısı
+
+   Source: Antalya Büyükşehir Belediyesi İmar Yönetmeliği (1999)
+   Verified: Muratpaşa KEOS system and Kent Konseyi 2025 report
+   Applies to: General residential/commercial buildings in Antalya
+
+   Note: A different formula exists for special cases (commercial areas,
+   elevated ground floors), but the general formula is simple multiplication.
    ```
    Example: 2,146 m² × 0.60 × 1.70 = 2,188.92 m²
+   Official example (Kent Konseyi 2025): 1,087 m² × 0.80 × 1.70 = 1,478.32 m²
 
 3. **Kat Adedi** (Number of Floors):
    ```
@@ -572,7 +580,7 @@ If browser CORS blocks direct API calls, use serverless proxy:
 - Ada: 6960, Parsel: 4 (Muratpaşa, Güzeloba)
 - Input: 2,146 m² parsel, TAKS 0.30, KAKS 0.60, Çıkma 1.70
 - Expected: Taban 643.8 m², Toplam 2,188.92 m², 2 floors
-- **Status**: ✅ All 40+ tests passing
+- **Status**: ✅ All 70 tests passing (verified December 6, 2025)
 
 **Functions**:
 - `calculateZoning(params)`: Main calculation function

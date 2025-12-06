@@ -60,12 +60,14 @@ export function wizardStateToProject(
       };
 
   // Extract unit mix from step 2
+  // Phase 3.2: Added 1+0, updated default sizes
   const unitMix: FeasibilityProject['unitMix'] = {
-    '1+1': { count: 0, area: 55 },
-    '2+1': { count: 0, area: 90 },
-    '3+1': { count: 0, area: 120 },
-    '4+1': { count: 0, area: 150 },
-    '5+1': { count: 0, area: 200 },
+    '1+0': { count: 0, area: 40 },
+    '1+1': { count: 0, area: 50 },  // Updated from 55m²
+    '2+1': { count: 0, area: 80 },  // Updated from 90m²
+    '3+1': { count: 0, area: 115 }, // Updated from 120m²
+    '4+1': { count: 0, area: 160 }, // Updated from 150m²
+    '5+1': { count: 0, area: 220 }, // Updated from 200m²
   };
 
   if (state.step2) {
@@ -105,7 +107,8 @@ export function wizardStateToProject(
 
   const salePrices = state.step3?.salePrices ||
     existingProject?.salePrices || {
-      '1+1': 40000,
+      '1+0': 45000,  // Phase 3.2: Highest price per m²
+      '1+1': 42000,  // Updated: Higher due to investor demand
       '2+1': 40000,
       '3+1': 38000,
       '4+1': 36000,

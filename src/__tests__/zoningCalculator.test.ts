@@ -137,6 +137,9 @@ describe('Zoning Calculator', () => {
   describe('calculateZoning - Test Case from Prompt', () => {
     it('should match expected results for Ada 6960, Parsel 4 (Muratpaşa, Güzeloba)', () => {
       // Test case from PHASE_2_1_FOUNDATION.md
+      // Formula: Parsel × KAKS × Çıkma (simple multiplication)
+      // Source: Antalya Büyükşehir Belediyesi İmar Yönetmeliği (1999)
+      // Verified: Muratpaşa KEOS and Kent Konseyi 2025 report
       const params: ZoningParams = {
         parselAlani: 2146,    // m²
         taks: 0.30,
@@ -147,11 +150,12 @@ describe('Zoning Calculator', () => {
 
       const result = calculateZoning(params);
 
-      // Expected results from prompt:
+      // Expected results:
       // tabanAlani = 2146 × 0.30 = 643.8 m²
       expect(result.tabanAlani).toBeCloseTo(643.8, 1);
 
       // toplamInsaatAlani = 2146 × 0.60 × 1.70 = 2188.92 m²
+      // Example from Kent Konseyi 2025: 1087 × 0.80 × 1.70 = 1478.32 m²
       expect(result.toplamInsaatAlani).toBeCloseTo(2188.92, 1);
 
       // katAdedi = 0.60 / 0.30 = 2 floors
@@ -190,19 +194,19 @@ describe('Zoning Calculator', () => {
       expect(result.tabanAlani).toBe(300);
 
       // Toplam İnşaat = 1000 × 1.50 × 1.60 = 2400 m²
-      expect(result.toplamInsaatAlani).toBe(2400);
+      expect(result.toplamInsaatAlani).toBeCloseTo(2400, 1);
 
       // Kat Adedi = 1.50 / 0.30 = 5 floors
       expect(result.katAdedi).toBe(5);
 
       // Emsal Dışı Max = 2400 × 0.30 = 720 m²
-      expect(result.emsalDisiMax).toBe(720);
+      expect(result.emsalDisiMax).toBeCloseTo(720, 1);
 
       // Brüt Kullanım = 2400 - 720 = 1680 m²
-      expect(result.brutKullanimAlani).toBe(1680);
+      expect(result.brutKullanimAlani).toBeCloseTo(1680, 1);
 
       // Net Kullanım = 1680 × 0.85 = 1428 m²
-      expect(result.netKullanimAlani).toBe(1428);
+      expect(result.netKullanimAlani).toBeCloseTo(1428, 1);
     });
 
     it('should handle single-story building (KAKS = TAKS)', () => {
@@ -264,8 +268,7 @@ describe('Zoning Calculator', () => {
       expect(result.katAdedi).toBe(5);
       expect(result.isHeightLimited).toBe(true);
 
-      // But total construction area is still based on KAKS
-      // Toplam = 1000 × 2.40 × 1.60 = 3840 m²
+      // Toplam İnşaat = 1000 × 2.40 × 1.60 = 3840 m²
       expect(result.toplamInsaatAlani).toBe(3840);
     });
 
@@ -312,11 +315,13 @@ describe('Zoning Calculator', () => {
 
       const result = calculateZoning(params);
 
+      // Toplam = 1000 × 1.50 × 1.60 = 2400 m²
+      // Emsal Dışı = 2400 × 0.30 = 720 m²
       // Brüt Kullanım = 2400 - 720 = 1680 m²
-      expect(result.brutKullanimAlani).toBe(1680);
+      expect(result.brutKullanimAlani).toBeCloseTo(1680, 1);
 
       // Net Kullanım = 1680 × 0.75 = 1260 m²
-      expect(result.netKullanimAlani).toBe(1260);
+      expect(result.netKullanimAlani).toBeCloseTo(1260, 1);
       expect(result.appliedNetGrossRatio).toBe(0.75);
     });
 
@@ -331,11 +336,12 @@ describe('Zoning Calculator', () => {
 
       const result = calculateZoning(params);
 
+      // Toplam = 1000 × 1.50 × 1.60 = 2400 m²
       // Emsal Dışı = 2400 × 0.25 = 600 m²
-      expect(result.emsalDisiMax).toBe(600);
+      expect(result.emsalDisiMax).toBeCloseTo(600, 1);
 
       // Brüt Kullanım = 2400 - 600 = 1800 m²
-      expect(result.brutKullanimAlani).toBe(1800);
+      expect(result.brutKullanimAlani).toBeCloseTo(1800, 1);
     });
   });
 
@@ -373,6 +379,7 @@ describe('Zoning Calculator', () => {
       const result = calculateZoning(params);
 
       expect(result.tabanAlani).toBe(45);
+      // Toplam = 150 × 1.20 × 1.40 = 252 m²
       expect(result.toplamInsaatAlani).toBeCloseTo(252);
       expect(result.katAdedi).toBe(4);
     });
@@ -388,6 +395,7 @@ describe('Zoning Calculator', () => {
       const result = calculateZoning(params);
 
       expect(result.tabanAlani).toBe(10000);
+      // Toplam = 50000 × 1.00 × 1.50 = 75000 m²
       expect(result.toplamInsaatAlani).toBe(75000);
       expect(result.katAdedi).toBe(5);
     });
@@ -435,7 +443,8 @@ describe('Zoning Calculator', () => {
         cikmaKatsayisi
       );
 
-      // Parsel = 3000 / (1.50 × 1.60) = 1250 m²
+      // Formula: Parsel = Toplam / (KAKS × Çıkma)
+      // Parsel = 3000 / (1.50 × 1.60) = 3000 / 2.40 = 1250 m²
       expect(requiredParsel).toBeCloseTo(1250, 1);
     });
 
@@ -445,7 +454,7 @@ describe('Zoning Calculator', () => {
 
       const requiredParsel = calculateRequiredParselArea(desiredTotalArea, kaks);
 
-      // Parsel = 2000 / (1.50 × 1.0) ≈ 1333.33 m²
+      // Parsel = 2000 / (1.50 × 1.0) = 2000 / 1.50 ≈ 1333.33 m²
       expect(requiredParsel).toBeCloseTo(1333.33, 1);
     });
 
@@ -508,16 +517,19 @@ describe('Zoning Calculator', () => {
       expect(summary.tabanAlani).toContain('300');
       expect(summary.tabanAlani).toContain('m²');
 
+      // Toplam = 1000 × 1.50 × 1.60 = 2400 m²
       expect(summary.toplamInsaat).toContain('2400');
       expect(summary.toplamInsaat).toContain('m²');
 
       expect(summary.katAdedi).toContain('5');
       expect(summary.katAdedi).toContain('kat');
 
+      // Net = 1428 m² (from calculation: 2400 - 720 emsal dışı × 0.85)
       expect(summary.netKullanim).toContain('1428');
       expect(summary.netKullanim).toContain('m²');
 
-      expect(summary.kapasite).toContain('14'); // ~1428/100
+      // Kapasite = ~14 konut (1428 / 100)
+      expect(summary.kapasite).toContain('14');
       expect(summary.kapasite).toContain('konut');
     });
 

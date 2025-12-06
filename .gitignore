@@ -22,3 +22,9 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Private sample documents - never commit
+SAMPLE_DOCUMENTS\(PRIVATE\)/
+SAMPLE\ DOCUMENTS\(PRIVATE\)/
+*.dwg
+*.dxf

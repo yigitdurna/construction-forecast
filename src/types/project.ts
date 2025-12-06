@@ -136,11 +136,12 @@ export function createEmptyProject(input?: CreateProjectInput): FeasibilityProje
       netKullanim: 0,
     },
     unitMix: {
-      '1+1': { count: 0, area: 55 },
-      '2+1': { count: 0, area: 90 },
-      '3+1': { count: 0, area: 120 },
-      '4+1': { count: 0, area: 150 },
-      '5+1': { count: 0, area: 200 },
+      '1+0': { count: 0, area: 40 },  // Phase 3.2: Added smallest unit type
+      '1+1': { count: 0, area: 50 },  // Updated: Was 55m²
+      '2+1': { count: 0, area: 80 },  // Updated: Was 90m²
+      '3+1': { count: 0, area: 115 }, // Updated: Was 120m²
+      '4+1': { count: 0, area: 160 }, // Updated: Was 150m²
+      '5+1': { count: 0, area: 220 }, // Updated: Was 200m²
     },
     unitMixSummary: {
       totalUnits: 0,
@@ -151,7 +152,8 @@ export function createEmptyProject(input?: CreateProjectInput): FeasibilityProje
     constructionQuality: 'mid',
     constructionCostPerM2: 21500,
     salePrices: {
-      '1+1': 40000,
+      '1+0': 45000,  // Phase 3.2: Highest price per m² (small, high demand)
+      '1+1': 42000,  // Updated: Higher than before (investor demand)
       '2+1': 40000,
       '3+1': 38000,
       '4+1': 36000,

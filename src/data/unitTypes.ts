@@ -32,12 +32,12 @@ export interface UnitTypeData {
  */
 export const APARTMENT_UNIT_TYPES: UnitTypeData[] = [
   {
-    id: 'studio',
-    label: 'Studio',
-    labelTR: 'Stüdyo',
-    avgSize: 45,
-    minSize: 35,
-    maxSize: 55,
+    id: '1+0',
+    label: '1+0',
+    labelTR: '1+0 (Stüdyo)',
+    avgSize: 40,
+    minSize: 30,
+    maxSize: 50,
     priceMultiplier: 1.15, // 15% premium per m² (high demand, efficient)
     demandByLocation: {
       tourist: 9,    // Very popular for short-term rentals

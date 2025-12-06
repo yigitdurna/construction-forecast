@@ -46,7 +46,9 @@ export function calculateUnitMix(
   const maxUnitsPerType = config?.maxUnitsPerType ?? Infinity;
 
   // Default prices if not provided (will be overridden by location data)
+  // Phase 3.2: Added 1+0 with premium pricing
   const defaultPrices: Record<UnitTypeCode, number> = {
+    '1+0': 80000,  // TL/m² - Highest price (small, high demand)
     '1+1': 75000,  // TL/m²
     '2+1': 70000,
     '3+1': 68000,
@@ -287,6 +289,7 @@ function generateMixVariations(
 
   // Family-focused (10% 2+1, 60% 3+1, 25% 4+1, 5% 1+1)
   variations.push({
+    '1+0': 0.00,
     '1+1': 0.05,
     '2+1': 0.10,
     '3+1': 0.60,
@@ -294,17 +297,19 @@ function generateMixVariations(
     '5+1': 0.00,
   });
 
-  // Investment-focused (40% 1+1, 40% 2+1, 15% 3+1, 5% 4+1)
+  // Investment-focused (40% 1+1, 40% 2+1, 15% 3+1, 5% 4+1) - Phase 3.2: Added 1+0
   variations.push({
+    '1+0': 0.15,  // 15% smallest units for investors
     '1+1': 0.40,
-    '2+1': 0.40,
-    '3+1': 0.15,
+    '2+1': 0.30,  // Reduced from 40%
+    '3+1': 0.10,  // Reduced from 15%
     '4+1': 0.05,
     '5+1': 0.00,
   });
 
   // Luxury-focused (0% 1+1, 20% 2+1, 40% 3+1, 35% 4+1, 5% 5+1)
   variations.push({
+    '1+0': 0.00,
     '1+1': 0.00,
     '2+1': 0.20,
     '3+1': 0.40,
@@ -312,17 +317,19 @@ function generateMixVariations(
     '5+1': 0.05,
   });
 
-  // Balanced (20% each for 1+1 through 4+1, 20% 5+1)
+  // Balanced (equal distribution)
   variations.push({
-    '1+1': 0.20,
-    '2+1': 0.20,
-    '3+1': 0.20,
-    '4+1': 0.20,
-    '5+1': 0.20,
+    '1+0': 0.17,  // ~17% each
+    '1+1': 0.17,
+    '2+1': 0.17,
+    '3+1': 0.17,
+    '4+1': 0.17,
+    '5+1': 0.15,  // Slightly less for largest
   });
 
   // Mid-range focused (10% 1+1, 45% 2+1, 45% 3+1)
   variations.push({
+    '1+0': 0.00,
     '1+1': 0.10,
     '2+1': 0.45,
     '3+1': 0.45,

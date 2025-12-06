@@ -7,20 +7,25 @@
 
 /**
  * Manual İmar parameters (simplified for user entry)
+ *
+ * Note: katAdedi is CALCULATED from KAKS/TAKS, not manually entered
+ * Formula: katAdedi = KAKS / TAKS
  */
 export interface ManualImarParams {
-  taks: number;      // Taban Alanı Kat Sayısı (Building Coverage Ratio)
-  kaks: number;      // Kat Alanı Kat Sayısı (Floor Area Ratio = EMSAL)
-  katAdedi: number;  // Kat Adedi (Number of floors)
+  taks: number;      // Taban Alanı Kat Sayısı (Building Coverage Ratio) - MANUAL INPUT
+  kaks: number;      // Kat Alanı Kat Sayısı (Floor Area Ratio = EMSAL) - MANUAL INPUT
+  katAdedi: number;  // Kat Adedi (Number of floors) - CALCULATED (KAKS/TAKS)
+  cikmaKatsayisi?: number;  // Çıkma Katsayısı (Projection coefficient) - OPTIONAL MANUAL INPUT
 }
 
 /**
  * Validation limits for manual İmar entry
  */
 export const IMAR_LIMITS = {
-  taks: { min: 0.05, max: 0.70, step: 0.05 },
-  kaks: { min: 0.10, max: 3.00, step: 0.05 },
-  katAdedi: { min: 1, max: 15, step: 1 },
+  taks: { min: 0.05, max: 0.70, step: 0.01 },
+  kaks: { min: 0.10, max: 10.00, step: 0.01 },
+  katAdedi: { min: 0.5, max: 50, step: 0.1 },  // Calculated value, but needs validation
+  cikmaKatsayisi: { min: 1.0, max: 2.0, step: 0.1 },
 };
 
 /**
@@ -30,14 +35,14 @@ export const IMAR_ERRORS = {
   taksOutOfRange: `TAKS değeri ${IMAR_LIMITS.taks.min} ile ${IMAR_LIMITS.taks.max} arasında olmalıdır`,
   kaksOutOfRange: `KAKS değeri ${IMAR_LIMITS.kaks.min} ile ${IMAR_LIMITS.kaks.max} arasında olmalıdır`,
   katAdediOutOfRange: `Kat adedi ${IMAR_LIMITS.katAdedi.min} ile ${IMAR_LIMITS.katAdedi.max} arasında olmalıdır`,
+  cikmaOutOfRange: `Çıkma katsayısı ${IMAR_LIMITS.cikmaKatsayisi.min} ile ${IMAR_LIMITS.cikmaKatsayisi.max} arasında olmalıdır`,
   kaksLessThanTaks: 'KAKS değeri TAKS değerinden küçük olamaz (çok katlı binalar için)',
-  katAdediInconsistent: (required: number) =>
-    `Bu TAKS/KAKS oranı için en az ${required} kat gereklidir`,
   required: 'Bu alan zorunludur',
   invalidNumber: 'Geçerli bir sayı giriniz',
   taksRequired: 'TAKS değeri giriniz (örn: 0.30)',
-  kaksRequired: 'KAKS/Emsal değeri giriniz (örn: 0.60)',
-  katAdediRequired: 'Kat adedi giriniz (örn: 2)',
+  kaksRequired: 'KAKS/Emsal değeri giriniz (örn: 1.05)',
+  katAdediCalculation: 'Kat adedi KAKS/TAKS oranından hesaplanır',
+  cikmaRequired: 'Çıkma katsayısı giriniz (örn: 1.60)',
 };
 
 /**
@@ -62,9 +67,12 @@ export interface ValidationError {
  * Validates manual İmar parameters
  *
  * Validation rules:
- * 1. Range checks (TAKS 0.05-0.70, KAKS 0.10-3.00, Kat 1-15)
+ * 1. Range checks (TAKS 0.05-0.70, KAKS 0.10-10.00)
  * 2. Logical check: KAKS >= TAKS (for multi-story buildings)
- * 3. Consistency check: katAdedi should match KAKS/TAKS ratio
+ * 3. Kat Adedi validation (if provided, must match KAKS/TAKS)
+ * 4. Optional: Çıkma katsayısı (1.0-2.0) if provided
+ *
+ * Note: Kat Adedi is calculated from KAKS/TAKS, not manually entered
  *
  * @param params - Manual İmar parameters to validate
  * @returns Validation result with errors and warnings
@@ -75,7 +83,7 @@ export function validateImarParams(
   const errors: ValidationError[] = [];
   const warnings: string[] = [];
 
-  // Check required fields
+  // Check required fields (TAKS and KAKS only)
   if (params.taks === undefined || params.taks === null) {
     errors.push({
       field: 'taks',
@@ -92,20 +100,12 @@ export function validateImarParams(
     });
   }
 
-  if (params.katAdedi === undefined || params.katAdedi === null) {
-    errors.push({
-      field: 'katAdedi',
-      message: IMAR_ERRORS.katAdediRequired,
-      code: 'katAdedi_required',
-    });
-  }
-
   // If required fields missing, return early
   if (errors.length > 0) {
     return { isValid: false, errors, warnings };
   }
 
-  const { taks, kaks, katAdedi } = params as ManualImarParams;
+  const { taks, kaks, katAdedi, cikmaKatsayisi } = params as ManualImarParams;
 
   // Validate TAKS range
   if (isNaN(taks) || !isFinite(taks)) {
@@ -137,64 +137,61 @@ export function validateImarParams(
     });
   }
 
-  // Validate Kat Adedi range
-  if (isNaN(katAdedi) || !isFinite(katAdedi)) {
-    errors.push({
-      field: 'katAdedi',
-      message: IMAR_ERRORS.invalidNumber,
-      code: 'katAdedi_invalid_number',
-    });
-  } else if (
-    katAdedi < IMAR_LIMITS.katAdedi.min ||
-    katAdedi > IMAR_LIMITS.katAdedi.max
-  ) {
-    errors.push({
-      field: 'katAdedi',
-      message: IMAR_ERRORS.katAdediOutOfRange,
-      code: 'katAdedi_out_of_range',
-    });
-  } else if (!Number.isInteger(katAdedi)) {
-    errors.push({
-      field: 'katAdedi',
-      message: 'Kat adedi tam sayı olmalıdır',
-      code: 'katAdedi_not_integer',
-    });
+  // Validate Kat Adedi (should be calculated, but if provided, validate it)
+  if (katAdedi !== undefined) {
+    if (isNaN(katAdedi) || !isFinite(katAdedi)) {
+      errors.push({
+        field: 'katAdedi',
+        message: IMAR_ERRORS.invalidNumber,
+        code: 'katAdedi_invalid_number',
+      });
+    } else if (
+      katAdedi < IMAR_LIMITS.katAdedi.min ||
+      katAdedi > IMAR_LIMITS.katAdedi.max
+    ) {
+      errors.push({
+        field: 'katAdedi',
+        message: IMAR_ERRORS.katAdediOutOfRange,
+        code: 'katAdedi_out_of_range',
+      });
+    } else if (!isNaN(taks) && taks > 0) {
+      // Verify katAdedi matches calculation (KAKS / TAKS)
+      const calculatedKatAdedi = kaks / taks;
+      const tolerance = 0.1; // Allow small rounding differences
+
+      if (Math.abs(katAdedi - calculatedKatAdedi) > tolerance) {
+        warnings.push(
+          `Kat adedi (${katAdedi.toFixed(1)}) KAKS/TAKS oranından (${calculatedKatAdedi.toFixed(1)}) farklı.`
+        );
+      }
+    }
+  }
+
+  // Validate Çıkma Katsayısı (optional)
+  if (cikmaKatsayisi !== undefined) {
+    if (isNaN(cikmaKatsayisi) || !isFinite(cikmaKatsayisi)) {
+      errors.push({
+        field: 'cikmaKatsayisi',
+        message: IMAR_ERRORS.invalidNumber,
+        code: 'cikma_invalid_number',
+      });
+    } else if (
+      cikmaKatsayisi < IMAR_LIMITS.cikmaKatsayisi.min ||
+      cikmaKatsayisi > IMAR_LIMITS.cikmaKatsayisi.max
+    ) {
+      errors.push({
+        field: 'cikmaKatsayisi',
+        message: IMAR_ERRORS.cikmaOutOfRange,
+        code: 'cikma_out_of_range',
+      });
+    }
   }
 
   // Cross-validation: KAKS should be >= TAKS for multi-story buildings
   if (!isNaN(kaks) && !isNaN(taks) && kaks < taks) {
-    errors.push({
-      field: 'kaks',
-      message: IMAR_ERRORS.kaksLessThanTaks,
-      code: 'kaks_less_than_taks',
-    });
-  }
-
-  // Logical validation: katAdedi should be consistent with KAKS/TAKS ratio
-  if (
-    !isNaN(kaks) &&
-    !isNaN(taks) &&
-    taks > 0 &&
-    !isNaN(katAdedi) &&
-    Number.isInteger(katAdedi)
-  ) {
-    // Implied number of floors from coefficients
-    const impliedKat = Math.ceil(kaks / taks);
-
-    if (katAdedi < impliedKat) {
-      errors.push({
-        field: 'katAdedi',
-        message: IMAR_ERRORS.katAdediInconsistent(impliedKat),
-        code: 'katAdedi_inconsistent',
-      });
-    }
-
-    // Warning if user entered more floors than strictly needed
-    if (katAdedi > impliedKat) {
-      warnings.push(
-        `Girilen kat adedi (${katAdedi}) TAKS/KAKS oranından hesaplanan kat sayısından (${impliedKat}) fazla. Bu normal olabilir ancak kontrol ediniz.`
-      );
-    }
+    warnings.push(
+      'KAKS değeri TAKS değerinden küçük. Bu genellikle tek katlı binalar içindir.'
+    );
   }
 
   return {
@@ -279,21 +276,106 @@ export function parseImarValue(input: string): number {
 /**
  * Checks if manual İmar params are complete
  *
+ * Only TAKS and KAKS are required inputs (katAdedi is calculated)
+ *
  * @param params - Partial manual İmar params
  * @returns True if all required fields are present
  */
 export function isImarComplete(
   params: Partial<ManualImarParams>
-): params is ManualImarParams {
+): boolean {
   return (
     params.taks !== undefined &&
     params.taks !== null &&
     !isNaN(params.taks) &&
     params.kaks !== undefined &&
     params.kaks !== null &&
-    !isNaN(params.kaks) &&
-    params.katAdedi !== undefined &&
-    params.katAdedi !== null &&
-    !isNaN(params.katAdedi)
+    !isNaN(params.kaks)
   );
+}
+
+/**
+ * Alias for validateImarParams (for compatibility)
+ */
+export function validateImarInputs(
+  params: Partial<ManualImarParams>
+): ValidationResult {
+  return validateImarParams(params);
+}
+
+/**
+ * Calculate İmar derived values
+ *
+ * @param params - İmar parameters including parselAlani
+ * @returns Calculated values
+ */
+export function calculateImarValues(params: {
+  parselAlani: number;
+  taks?: number;
+  kaks?: number;
+  cikmaKatsayisi?: number;
+  katAdedi?: number;
+  yencokOverride?: number;
+  hmaxOverride?: number;
+}): {
+  tabanAlani: number;
+  toplamInsaatAlani: number;
+  hesaplananKatAdedi: number;
+  uygulanacakKatAdedi: number;
+  cikmaIleToplamAlan?: number;
+} {
+  const { parselAlani } = params;
+  const taks = params.taks || 0;
+  const kaks = params.kaks || 0;
+  const cikmaKatsayisi = params.cikmaKatsayisi || 1.0;
+
+  const tabanAlani = parselAlani * taks;
+  const toplamInsaatAlani = parselAlani * kaks;
+  const hesaplananKatAdedi = taks > 0 ? kaks / taks : 0;
+  const uygulanacakKatAdedi = hesaplananKatAdedi; // Same for now (can be limited by max height)
+
+  // Calculate with çıkma if provided
+  const cikmaIleToplamAlan = cikmaKatsayisi > 1.0
+    ? toplamInsaatAlani * cikmaKatsayisi
+    : undefined;
+
+  return {
+    tabanAlani,
+    toplamInsaatAlani,
+    hesaplananKatAdedi,
+    uygulanacakKatAdedi,
+    cikmaIleToplamAlan,
+  };
+}
+
+/**
+ * Create complete ImarData object
+ *
+ * @param params - İmar parameters including parselAlani
+ * @returns Complete ImarData object
+ */
+export function createImarData(params: {
+  parselAlani: number;
+  taks: number;
+  kaks: number;
+  cikmaKatsayisi?: number;
+  yencokOverride?: number;
+  hmaxOverride?: number;
+}): any {
+  const calculated = calculateImarValues(params);
+
+  return {
+    inputs: {
+      parselAlani: params.parselAlani,
+      taks: params.taks,
+      kaks: params.kaks,
+      cikmaKatsayisi: params.cikmaKatsayisi,
+    },
+    calculated: {
+      tabanAlani: calculated.tabanAlani,
+      toplamInsaatAlani: calculated.toplamInsaatAlani,
+      hesaplananKatAdedi: calculated.hesaplananKatAdedi,
+      uygulanacakKatAdedi: calculated.uygulanacakKatAdedi,
+    },
+  };
 }

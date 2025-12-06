@@ -231,9 +231,20 @@ export function calculateZoning(params: ZoningParams): ZoningResult {
 
   // 2. Calculate Toplam İnşaat Alanı (Total Construction Area)
   // Formula: Toplam = Parsel Alanı × KAKS × Çıkma Katsayısı
+  //
+  // Source: Antalya Büyükşehir Belediyesi İmar Yönetmeliği (1999)
+  // Verified: Muratpaşa KEOS system and Kent Konseyi 2025 report
+  //
   // KAKS (also called EMSAL) determines total buildable area
-  // Çıkma katsayısı adds extra area for projections (balconies, bay windows)
-  // Phase 2.2: cikmaKatsayisi is optional, default to 1.0 (no projection)
+  // Çıkma katsayısı (typically 1.70 in Antalya) accounts for balconies,
+  // terraces, and projections common in Mediterranean building style.
+  // The multiplier applies to the ENTIRE emsal area.
+  //
+  // Example (from Kent Konseyi 2025):
+  // - Parsel: 1,087 m², KAKS: 0.80, Çıkma: 1.70
+  // - Toplam: 1,087 × 0.80 × 1.70 = 1,478.32 m²
+  //
+  // Note: Phase 2.2 - cikmaKatsayisi is optional, default to 1.0 (no projection bonus)
   const cikmaKatsayisi = params.cikmaKatsayisi ?? 1.0;
   const toplamInsaatAlani = params.parselAlani * params.kaks * cikmaKatsayisi;
 

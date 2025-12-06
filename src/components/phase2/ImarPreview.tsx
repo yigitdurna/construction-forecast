@@ -6,6 +6,7 @@
  */
 
 import type { ManualImarParams } from '../../utils/imarValidation';
+import { formatNumber, formatCoefficient } from '../../utils/formatting';
 
 export interface ImarPreviewProps {
   params: Partial<ManualImarParams>;
@@ -16,16 +17,13 @@ export interface ImarPreviewProps {
 }
 
 /**
- * Format number with Turkish locale
+ * Safely format a number (handles undefined/NaN)
  */
-function formatNumber(value: number | undefined, decimals: number = 2): string {
+function safeFormatNumber(value: number | undefined, decimals: number = 2): string {
   if (value === undefined || isNaN(value)) {
     return '-';
   }
-  return value.toLocaleString('tr-TR', {
-    minimumFractionDigits: decimals,
-    maximumFractionDigits: decimals,
-  });
+  return formatNumber(value, decimals);
 }
 
 /**
@@ -204,7 +202,7 @@ export function ImarPreview({
                 <span className="text-sm text-gray-900">Taban Alanı</span>
                 {taks !== undefined && !isNaN(taks) && (
                   <span className="ml-2 text-xs text-gray-500">
-                    ({formatNumber(parselAlani, 0)} × {formatNumber(taks)})
+                    ({formatNumber(parselAlani, 0)} × {formatCoefficient(taks)})
                   </span>
                 )}
               </div>
@@ -213,7 +211,7 @@ export function ImarPreview({
                   tabanAlani !== undefined ? 'text-blue-600' : 'text-gray-400'
                 }`}
               >
-                {formatNumber(tabanAlani, 2)} m²
+                {safeFormatNumber(tabanAlani, 2)} m²
               </span>
             </div>
           </div>
@@ -227,7 +225,7 @@ export function ImarPreview({
                 </span>
                 {kaks !== undefined && !isNaN(kaks) && (
                   <span className="ml-2 text-xs text-gray-500">
-                    ({formatNumber(parselAlani, 0)} × {formatNumber(kaks)})
+                    ({formatNumber(parselAlani, 0)} × {formatCoefficient(kaks)})
                   </span>
                 )}
               </div>
@@ -238,7 +236,7 @@ export function ImarPreview({
                     : 'text-gray-400'
                 }`}
               >
-                {formatNumber(toplamInsaatAlani, 2)} m²
+                {safeFormatNumber(toplamInsaatAlani, 2)} m²
               </span>
             </div>
           </div>
@@ -272,7 +270,7 @@ export function ImarPreview({
                     : 'text-gray-400'
                 }`}
               >
-                {formatNumber(katBasinaAlan, 2)} m²
+                {safeFormatNumber(katBasinaAlan, 2)} m²
               </span>
             </div>
           </div>
@@ -289,7 +287,7 @@ export function ImarPreview({
                   emsalDisiMax !== undefined ? 'text-gray-700' : 'text-gray-400'
                 }`}
               >
-                {formatNumber(emsalDisiMax, 2)} m²
+                {safeFormatNumber(emsalDisiMax, 2)} m²
               </span>
             </div>
           </div>
@@ -310,7 +308,7 @@ export function ImarPreview({
                     : 'text-gray-400'
                 }`}
               >
-                {formatNumber(netKullanimAlani, 2)} m²
+                {safeFormatNumber(netKullanimAlani, 2)} m²
               </span>
             </div>
             <p className="mt-1 text-xs text-blue-700">

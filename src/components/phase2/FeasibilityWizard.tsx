@@ -8,7 +8,7 @@ import { Link } from 'react-router-dom';
 import { useFeasibility } from '../../context/FeasibilityContext';
 import { StepIndicator } from './StepIndicator';
 import { ParselLookupWithImar } from './ParselLookupWithImar';
-import { UnitMixEditor } from './UnitMixEditor';
+import { UnitMixEditorDynamic as UnitMixEditor } from './UnitMixEditorDynamic';
 import { CostPricingStep } from './CostPricingStep';
 import { FinancialSummary } from './FinancialSummary';
 import type {
@@ -52,6 +52,7 @@ export function FeasibilityWizard(): JSX.Element {
     parselAlani: number;
     imarParams: ManualImarParams;
     zoningResult: ZoningResult;
+    bodrumConfig?: import('../../utils/imarCalculations').BodrumConfig;
   }) => {
     // Create Step 1 data structure
     const parselData: TKGMParcelData = {
@@ -66,6 +67,7 @@ export function FeasibilityWizard(): JSX.Element {
       parselData,
       imarParams: result.imarParams,
       zoningResult: result.zoningResult,
+      bodrumConfig: result.bodrumConfig, // Phase 3.2: Pass bodrum configuration
     };
 
     setStep1Data(step1Data);
@@ -129,9 +131,19 @@ export function FeasibilityWizard(): JSX.Element {
             </div>
           );
         }
+
+        // Phase 3.2: Calculate adjusted area if bodrum is enabled with konut usage
+        let availableArea = step1.zoningResult.netKullanimAlani;
+        if (step1.bodrumConfig?.enabled &&
+            (step1.bodrumConfig.usage === 'konut' || step1.bodrumConfig.usage === 'ticaret')) {
+          const bodrumArea = step1.bodrumConfig.area || step1.zoningResult.tabanAlani;
+          const bodrumSellableArea = bodrumArea * 0.85; // Net/gross ratio
+          availableArea = availableArea + bodrumSellableArea;
+        }
+
         return (
           <UnitMixEditor
-            availableArea={step1.zoningResult.netKullanimAlani}
+            availableArea={availableArea}
             initialMix={step2 ?? undefined}
             onMixChange={handleStep2Update}
           />

@@ -51,6 +51,7 @@ export interface ParselImarData {
   parselData: TKGMParcelData;
   imarParams: ManualImarParams;
   zoningResult: ZoningResult;
+  bodrumConfig?: import('../utils/imarCalculations').BodrumConfig; // Phase 3.2: Basement configuration
 }
 
 // ============================================================================
@@ -81,24 +82,31 @@ export interface UnitMix {
 
 /**
  * Default unit sizes (net area in m²)
+ *
+ * Phase 3.2: Added 1+0, updated existing sizes to match market reality
  */
 export const DEFAULT_UNIT_SIZES: Record<UnitTypeCode, number> = {
-  '1+1': 55,
-  '2+1': 90,
-  '3+1': 120,
-  '4+1': 150,
-  '5+1': 200,
+  '1+0': 40,     // Phase 3.2: Smallest, investment-focused
+  '1+1': 50,     // Updated: Was 55m², now 50m² (more realistic)
+  '2+1': 80,     // Updated: Was 90m², now 80m² (more realistic)
+  '3+1': 115,    // Updated: Was 120m², now 115m² (more realistic)
+  '4+1': 160,    // Updated: Was 150m², now 160m² (larger luxury)
+  '5+1': 220,    // Updated: Was 200m², now 220m² (larger luxury)
 };
 
 /**
  * Default unit mix ratios (percentages)
+ *
+ * Phase 3.2: Updated for investment-focused Antalya market (2024-2025)
+ * Total smaller units (1+0 + 1+1) = 50% for rental/investment demand
  */
 export const DEFAULT_MIX_RATIOS: Record<UnitTypeCode, number> = {
-  '1+1': 0.15, // 15%
-  '2+1': 0.35, // 35%
-  '3+1': 0.40, // 40%
-  '4+1': 0.10, // 10%
-  '5+1': 0.00, // 0%
+  '1+0': 0.15,    // 15% - Airbnb/rental investment, highest price per m²
+  '1+1': 0.35,    // 35% - MOST POPULAR - investors + young families
+  '2+1': 0.25,    // 25% - Small families, good demand
+  '3+1': 0.10,    // 10% - Families, moderate demand
+  '4+1': 0.10,    // 10% - Large families, luxury segment
+  '5+1': 0.05,    // 5%  - Very high-end only
 };
 
 // ============================================================================
@@ -121,25 +129,27 @@ export interface QualityTier {
 }
 
 /**
- * Quality tiers with costs
+ * Quality tiers with costs (per NET m²)
+ * Based on 2024-2025 Antalya construction costs
+ * Applied to NET usable area for simplicity
  */
 export const QUALITY_TIERS: Record<ConstructionQuality, QualityTier> = {
   standard: {
     name: 'Standart',
-    costPerM2: 18000, // Base: 18,000 TL/m²
-    multiplier: 0.85,
+    costPerM2: 28000, // Base: 28,000 TL/m² net
+    multiplier: 0.80,
     description: 'Ekonomik malzemeler, standart kalite',
   },
   mid: {
     name: 'Orta Kalite',
-    costPerM2: 21500, // Mid: 21,500 TL/m²
+    costPerM2: 35000, // Mid: 35,000 TL/m² net (BASE REFERENCE)
     multiplier: 1.0,
     description: 'Orta düzey malzemeler, iyi kalite',
   },
   luxury: {
     name: 'Lüks',
-    costPerM2: 28000, // Luxury: 28,000 TL/m²
-    multiplier: 1.25,
+    costPerM2: 45000, // Luxury: 45,000 TL/m² net
+    multiplier: 1.29,
     description: 'Yüksek kalite malzemeler, lüks bitirme',
   },
 };
@@ -190,27 +200,6 @@ export interface FinancialResult {
   npvAdjustedRevenue: number; // TL
   npvProfit: number; // TL
   npvROI: number; // %
-
-  // Scenarios
-  scenarios: {
-    optimistic: ScenarioResult;
-    base: ScenarioResult;
-    pessimistic: ScenarioResult;
-  };
-}
-
-/**
- * Single scenario result
- */
-export interface ScenarioResult {
-  name: string;
-  totalCost: number;
-  totalRevenue: number;
-  profit: number;
-  margin: number;
-  roi: number;
-  npvProfit: number;
-  npvROI: number;
 }
 
 // ============================================================================

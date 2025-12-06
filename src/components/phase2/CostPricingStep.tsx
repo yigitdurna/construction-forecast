@@ -1,18 +1,18 @@
 /**
  * Cost & Pricing Step Component
  *
- * Step 3: Configure construction quality and sale prices
+ * Step 3: Configure construction costs and sale prices
  */
 
 import { useState, useEffect } from 'react';
 import type {
   UnitMix,
   PricingConfig,
-  ConstructionQuality,
   UnitTypeCode,
   UnitPricing,
 } from '../../types/feasibility';
 import { QUALITY_TIERS, WIZARD_TEXT } from '../../types/feasibility';
+import { CostBreakdownEditor, CostBreakdownData } from './CostBreakdownEditor';
 
 export interface CostPricingStepProps {
   unitMix: UnitMix;
@@ -21,22 +21,28 @@ export interface CostPricingStepProps {
 }
 
 /**
- * District-based default sale prices (TL/m²)
- * Based on Phase 1 data
+ * District-based default sale prices (TL/m² NET area)
+ * Based on 2024-2025 Antalya market data
+ * NEW CONSTRUCTION PRICES (not resale)
  */
 const DISTRICT_BASE_PRICES: Record<string, number> = {
-  kepez: 38000,
-  muratpasa: 42000,
-  konyaalti: 40000,
-  default: 40000,
+  kepez: 45000,       // Budget/developing area
+  doseмealtı: 40000,  // Suburban
+  muratpasa: 65000,   // City center
+  konyaalti: 85000,   // Premium beach district
+  lara: 95000,        // Luxury resort area
+  alanya: 55000,      // Resort town
+  default: 65000,     // Default to mid-range
 };
 
 /**
  * Unit type price multipliers (relative to base)
+ * Phase 3.2: Added 1+0 with highest multiplier (small units, high demand)
  */
 const UNIT_PRICE_MULTIPLIERS: Record<UnitTypeCode, number> = {
+  '1+0': 1.12, // +12% premium (smallest, highest ROI, investor favorite)
   '1+1': 1.07, // +7% premium for small units (investor demand)
-  '2+1': 1.0, // Base price
+  '2+1': 1.0,  // Base price
   '3+1': 0.95, // -5% (larger units)
   '4+1': 0.90, // -10% (very large units)
   '5+1': 0.85, // -15% (rare, very large)
@@ -50,22 +56,32 @@ export function CostPricingStep({
   district,
   onPricingChange,
 }: CostPricingStepProps): JSX.Element {
-  const [selectedQuality, setSelectedQuality] =
-    useState<ConstructionQuality>('mid');
-
   const [salePrices, setSalePrices] = useState<Record<UnitTypeCode, number>>(
     () => getDefaultPrices(district)
   );
 
-  // Update pricing config whenever quality or prices change
+  // State for cost breakdown
+  const [costBreakdown, setCostBreakdown] = useState<CostBreakdownData | null>(null);
+
+  // State for common area costs
+  const [includeCommonAreas, setIncludeCommonAreas] = useState(false);
+  const [commonAreaPercent, setCommonAreaPercent] = useState(15);
+  const [commonAreaMultiplier, setCommonAreaMultiplier] = useState(1.5);
+
+  // Update pricing config whenever cost breakdown or prices change
   useEffect(() => {
+    // Use cost breakdown if available, otherwise fallback to default mid-tier
+    const costPerM2 = costBreakdown
+      ? costBreakdown.totalCostPerM2
+      : QUALITY_TIERS.mid.costPerM2;
+
     const config: PricingConfig = {
-      constructionQuality: selectedQuality,
-      constructionCostPerM2: QUALITY_TIERS[selectedQuality].costPerM2,
+      constructionQuality: 'mid', // Default to mid quality
+      constructionCostPerM2: costPerM2,
       salePrices,
     };
     onPricingChange(config);
-  }, [selectedQuality, salePrices, onPricingChange]);
+  }, [costBreakdown, salePrices, onPricingChange]);
 
   /**
    * Get default sale prices for district
@@ -76,7 +92,7 @@ export function CostPricingStep({
       DISTRICT_BASE_PRICES.default;
 
     const prices: Partial<Record<UnitTypeCode, number>> = {};
-    (['1+1', '2+1', '3+1', '4+1', '5+1'] as UnitTypeCode[]).forEach((type) => {
+    (['1+0', '1+1', '2+1', '3+1', '4+1', '5+1'] as UnitTypeCode[]).forEach((type) => {
       prices[type] = Math.round(basePrice * UNIT_PRICE_MULTIPLIERS[type]);
     });
 
@@ -84,21 +100,43 @@ export function CostPricingStep({
   }
 
   /**
-   * Handle quality selection
-   */
-  const handleQualityChange = (quality: ConstructionQuality) => {
-    setSelectedQuality(quality);
-  };
-
-  /**
    * Handle price change for a unit type
    */
   const handlePriceChange = (type: UnitTypeCode, value: string) => {
-    const price = parseFloat(value) || 0;
-    setSalePrices((prev) => ({
-      ...prev,
-      [type]: price,
-    }));
+    // Allow empty string for better UX
+    if (value === '') {
+      setSalePrices((prev) => ({
+        ...prev,
+        [type]: 0,
+      }));
+      return;
+    }
+
+    const price = parseFloat(value);
+    if (!isNaN(price) && price >= 0) {
+      setSalePrices((prev) => ({
+        ...prev,
+        [type]: price,
+      }));
+    }
+  };
+
+  /**
+   * Handle price blur - restore district default if empty
+   */
+  const handlePriceBlur = (type: UnitTypeCode, value: string) => {
+    if (value === '' || isNaN(parseFloat(value))) {
+      // Restore district default price
+      const basePrice =
+        DISTRICT_BASE_PRICES[district.toLowerCase()] ||
+        DISTRICT_BASE_PRICES.default;
+      const defaultPrice = Math.round(basePrice * UNIT_PRICE_MULTIPLIERS[type]);
+
+      setSalePrices((prev) => ({
+        ...prev,
+        [type]: defaultPrice,
+      }));
+    }
   };
 
   /**
@@ -122,11 +160,35 @@ export function CostPricingStep({
   }
 
   const unitPricing = calculateUnitPricing();
-  const totalConstructionCost =
-    unitMix.totalGrossArea * QUALITY_TIERS[selectedQuality].costPerM2;
+
+  // CRITICAL FIX: Use NET area (not GROSS) for cost calculation
+  // Use cost breakdown total if available, otherwise fall back to default mid-tier
+  const costPerM2 = costBreakdown
+    ? costBreakdown.totalCostPerM2
+    : QUALITY_TIERS.mid.costPerM2;
+
+  // Calculate unit interior costs
+  const unitInteriorCost = unitMix.totalNetArea * costPerM2;
+
+  // Calculate common area costs if enabled
+  const commonAreaM2 = unitMix.totalNetArea * (commonAreaPercent / 100);
+  const commonAreaCostPerM2 = costPerM2 * commonAreaMultiplier;
+  const commonAreaCost = includeCommonAreas ? commonAreaM2 * commonAreaCostPerM2 : 0;
+
+  // Total construction cost
+  const totalConstructionCost = unitInteriorCost + commonAreaCost;
+
   const totalRevenue = unitPricing.reduce((sum, u) => sum + u.totalRevenue, 0);
   const grossProfit = totalRevenue - totalConstructionCost;
   const margin = totalRevenue > 0 ? (grossProfit / totalRevenue) * 100 : 0;
+
+  // Per-m² calculations for display
+  const totalConstructionCostPerM2 = unitMix.totalNetArea > 0
+    ? totalConstructionCost / unitMix.totalNetArea
+    : costPerM2;
+  const averageRevenuePerM2 = unitMix.totalNetArea > 0
+    ? totalRevenue / unitMix.totalNetArea
+    : 0;
 
   const districtBasePrice =
     DISTRICT_BASE_PRICES[district.toLowerCase()] || DISTRICT_BASE_PRICES.default;
@@ -143,69 +205,103 @@ export function CostPricingStep({
         </p>
       </div>
 
-      {/* Construction Quality Selection */}
+      {/* Cost Breakdown Editor - Expandable Categories */}
+      <CostBreakdownEditor
+        netArea={unitMix.totalNetArea}
+        onCostChange={setCostBreakdown}
+      />
+
+      {/* Common Area Costs - Optional Feature */}
       <div className="rounded-lg border border-gray-200 bg-white p-6">
-        <h4 className="text-base font-semibold text-gray-900">
-          {WIZARD_TEXT.step3.quality}
-        </h4>
-        <div className="mt-4 grid gap-4 sm:grid-cols-3">
-          {(Object.keys(QUALITY_TIERS) as ConstructionQuality[]).map((quality) => {
-            const tier = QUALITY_TIERS[quality];
-            const isSelected = selectedQuality === quality;
+        <div className="flex items-start gap-3">
+          <input
+            type="checkbox"
+            id="includeCommonAreas"
+            checked={includeCommonAreas}
+            onChange={(e) => setIncludeCommonAreas(e.target.checked)}
+            className="mt-1 h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+          />
+          <div className="flex-1">
+            <label htmlFor="includeCommonAreas" className="cursor-pointer">
+              <h4 className="text-base font-semibold text-gray-900">
+                🏛️ Ortak Alan Maliyetlerini Dahil Et
+              </h4>
+              <p className="mt-1 text-xs text-gray-600">
+                Lobiler, koridorlar, fitness, sauna gibi ortak alanların yüksek kaliteli bitirme maliyetlerini hesaba katın
+              </p>
+            </label>
 
-            return (
-              <button
-                key={quality}
-                onClick={() => handleQualityChange(quality)}
-                className={`rounded-lg border-2 p-4 text-left transition-all ${
-                  isSelected
-                    ? 'border-blue-500 bg-blue-50'
-                    : 'border-gray-200 bg-white hover:border-gray-300'
-                }`}
-              >
-                <div className="flex items-center justify-between">
-                  <h5 className="font-semibold text-gray-900">{tier.name}</h5>
-                  {isSelected && (
-                    <svg
-                      className="h-5 w-5 text-blue-600"
-                      fill="currentColor"
-                      viewBox="0 0 20 20"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                  )}
+            {includeCommonAreas && (
+              <div className="mt-4 space-y-4 rounded-lg border border-gray-200 bg-gray-50 p-4">
+                {/* Percentage Slider */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Ortak Alan Oranı: {commonAreaPercent}%
+                  </label>
+                  <div className="mt-2 flex items-center gap-3">
+                    <span className="text-xs text-gray-500">5%</span>
+                    <input
+                      type="range"
+                      min="5"
+                      max="30"
+                      step="1"
+                      value={commonAreaPercent}
+                      onChange={(e) => setCommonAreaPercent(Number(e.target.value))}
+                      className="flex-1"
+                    />
+                    <span className="text-xs text-gray-500">30%</span>
+                  </div>
+                  <p className="mt-1 text-xs text-gray-500">
+                    NET alana göre ortak alan yüzdesi ({commonAreaM2.toFixed(0)} m²)
+                  </p>
                 </div>
-                <p className="mt-1 text-sm text-gray-600">{tier.description}</p>
-                <p className="mt-2 text-lg font-bold text-blue-600">
-                  {tier.costPerM2.toLocaleString('tr-TR')} TL/m²
-                </p>
-              </button>
-            );
-          })}
-        </div>
 
-        {/* Construction Cost Summary */}
-        <div className="mt-4 rounded-lg bg-gray-50 p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">
-                {WIZARD_TEXT.step3.constructionCost}
-              </p>
-              <p className="mt-1 text-xs text-gray-500">
-                {unitMix.totalGrossArea.toLocaleString('tr-TR', {
-                  maximumFractionDigits: 0,
-                })}{' '}
-                m² × {QUALITY_TIERS[selectedQuality].costPerM2.toLocaleString('tr-TR')}{' '}
-                TL/m²
-              </p>
-            </div>
-            <p className="text-xl font-bold text-gray-900">
-              {(totalConstructionCost / 1000000).toFixed(1)}M TL
-            </p>
+                {/* Multiplier Dropdown */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Ortak Alan Maliyet Çarpanı
+                  </label>
+                  <select
+                    value={commonAreaMultiplier}
+                    onChange={(e) => setCommonAreaMultiplier(Number(e.target.value))}
+                    className="mt-2 block w-full rounded-md border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-blue-500"
+                  >
+                    <option value="1.2">1.2x - Temel (Basit lobi + koridorlar)</option>
+                    <option value="1.5">1.5x - Orta (İyi lobi + fitness)</option>
+                    <option value="1.8">1.8x - Lüks (Geniş amenities + premium bitirme)</option>
+                    <option value="2.0">2.0x - Ultra Lüks (Spa, havuz, sanat eserleri)</option>
+                  </select>
+                  <p className="mt-1 text-xs text-gray-500">
+                    Ortak alanlar daire içinden ne kadar daha pahalı? (Maliyet: {commonAreaCostPerM2.toLocaleString('tr-TR', { maximumFractionDigits: 0 })} ₺/m²)
+                  </p>
+                </div>
+
+                {/* Live Preview */}
+                <div className="rounded-md border border-blue-200 bg-blue-50 p-3">
+                  <h5 className="text-xs font-semibold text-blue-900">📊 Maliyet Önizleme</h5>
+                  <div className="mt-2 space-y-1 text-xs text-blue-800">
+                    <div className="flex justify-between">
+                      <span>Daire İç Mekan:</span>
+                      <span className="font-semibold">
+                        {unitInteriorCost.toLocaleString('tr-TR', { maximumFractionDigits: 0 })} ₺
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>+ Ortak Alanlar ({commonAreaM2.toFixed(0)} m² × {commonAreaCostPerM2.toLocaleString('tr-TR', { maximumFractionDigits: 0 })} ₺/m²):</span>
+                      <span className="font-semibold">
+                        {commonAreaCost.toLocaleString('tr-TR', { maximumFractionDigits: 0 })} ₺
+                      </span>
+                    </div>
+                    <div className="border-t border-blue-300 pt-1 mt-1 flex justify-between font-bold">
+                      <span>= TOPLAM MALİYET:</span>
+                      <span className="text-blue-900">
+                        {totalConstructionCost.toLocaleString('tr-TR', { maximumFractionDigits: 0 })} ₺
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -225,6 +321,11 @@ export function CostPricingStep({
         </div>
 
         <div className="mt-4 overflow-hidden rounded-lg border border-gray-200">
+          <div className="bg-gray-100 border-b border-gray-200 px-4 py-2">
+            <p className="text-xs font-medium text-gray-700">
+              Satış Fiyatlandırması (NET m² bazında)
+            </p>
+          </div>
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
@@ -235,16 +336,16 @@ export function CostPricingStep({
                   Adet
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-600">
-                  m²/Birim
+                  NET m²
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-600">
-                  Fiyat/m²
+                  m² Satış Fiyatı
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-600">
-                  Birim Fiyat
+                  Daire Fiyatı
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-600">
-                  Toplam Gelir
+                  Toplam
                 </th>
               </tr>
             </thead>
@@ -261,23 +362,32 @@ export function CostPricingStep({
                     {unit.netArea} m²
                   </td>
                   <td className="whitespace-nowrap px-4 py-3">
-                    <input
-                      type="number"
-                      value={unit.pricePerM2}
-                      onChange={(e) =>
-                        handlePriceChange(unit.type, e.target.value)
-                      }
-                      className="w-28 rounded border-gray-300 px-2 py-1 text-sm focus:border-blue-500 focus:ring-blue-500"
-                    />
+                    <div className="flex items-center gap-1">
+                      <input
+                        type="number"
+                        value={unit.pricePerM2 === 0 ? '' : unit.pricePerM2}
+                        onChange={(e) =>
+                          handlePriceChange(unit.type, e.target.value)
+                        }
+                        onBlur={(e) =>
+                          handlePriceBlur(unit.type, e.target.value)
+                        }
+                        min={0}
+                        step={1000}
+                        placeholder="0"
+                        className="w-28 rounded border-gray-300 px-2 py-1 text-sm focus:border-blue-500 focus:ring-blue-500"
+                      />
+                      <span className="text-xs text-gray-500">₺/m²</span>
+                    </div>
                   </td>
                   <td className="whitespace-nowrap px-4 py-3">
-                    <span className="font-mono text-sm font-medium text-gray-900">
-                      {(unit.unitPrice / 1000000).toFixed(2)}M
+                    <span className="text-sm font-medium text-gray-900">
+                      {unit.unitPrice.toLocaleString('tr-TR', { maximumFractionDigits: 0 })} ₺
                     </span>
                   </td>
                   <td className="whitespace-nowrap px-4 py-3">
-                    <span className="font-mono text-sm font-semibold text-blue-600">
-                      {(unit.totalRevenue / 1000000).toFixed(2)}M
+                    <span className="text-sm font-semibold text-blue-600">
+                      {unit.totalRevenue.toLocaleString('tr-TR', { maximumFractionDigits: 0 })} ₺
                     </span>
                   </td>
                 </tr>
@@ -287,13 +397,13 @@ export function CostPricingStep({
               <tr>
                 <td
                   colSpan={5}
-                  className="px-4 py-3 text-right font-semibold text-gray-900"
+                  className="px-4 py-3 text-right text-sm font-semibold text-gray-900"
                 >
-                  Toplam Gelir:
+                  Toplam Satış Geliri:
                 </td>
                 <td className="whitespace-nowrap px-4 py-3">
-                  <span className="font-mono text-lg font-bold text-blue-600">
-                    {(totalRevenue / 1000000).toFixed(1)}M TL
+                  <span className="text-lg font-bold text-blue-600">
+                    {totalRevenue.toLocaleString('tr-TR', { maximumFractionDigits: 0 })} ₺
                   </span>
                 </td>
               </tr>
@@ -306,21 +416,38 @@ export function CostPricingStep({
       <div className="rounded-lg border border-green-200 bg-green-50 p-4">
         <div className="grid grid-cols-3 gap-4">
           <div>
-            <p className="text-xs text-green-700">Toplam Maliyet</p>
-            <p className="mt-1 font-mono text-lg font-semibold text-green-900">
-              {(totalConstructionCost / 1000000).toFixed(1)}M TL
+            <p className="text-xs font-medium text-green-700">💰 Toplam Maliyet</p>
+            <p className="mt-1 text-2xl font-bold text-green-900">
+              {totalConstructionCost.toLocaleString('tr-TR', { maximumFractionDigits: 0 })} ₺
+            </p>
+            {includeCommonAreas ? (
+              <div className="mt-1 text-xs text-green-600 space-y-0.5">
+                <div>Daire İç: {unitInteriorCost.toLocaleString('tr-TR', { maximumFractionDigits: 0 })} ₺</div>
+                <div>Ortak Alan: {commonAreaCost.toLocaleString('tr-TR', { maximumFractionDigits: 0 })} ₺</div>
+                <div>({totalConstructionCostPerM2.toLocaleString('tr-TR', { maximumFractionDigits: 0 })} ₺/m² ort.)</div>
+              </div>
+            ) : (
+              <p className="mt-1 text-xs text-green-600">
+                ({totalConstructionCostPerM2.toLocaleString('tr-TR', { maximumFractionDigits: 0 })} ₺/m²)
+              </p>
+            )}
+          </div>
+          <div>
+            <p className="text-xs font-medium text-green-700">📈 Toplam Satış Geliri</p>
+            <p className="mt-1 text-2xl font-bold text-green-900">
+              {totalRevenue.toLocaleString('tr-TR', { maximumFractionDigits: 0 })} ₺
+            </p>
+            <p className="mt-1 text-xs text-green-600">
+              (Ort: {averageRevenuePerM2.toLocaleString('tr-TR', { maximumFractionDigits: 0 })} ₺/m²)
             </p>
           </div>
           <div>
-            <p className="text-xs text-green-700">Toplam Gelir</p>
-            <p className="mt-1 font-mono text-lg font-semibold text-green-900">
-              {(totalRevenue / 1000000).toFixed(1)}M TL
+            <p className="text-xs font-medium text-green-700">💵 Net Kar</p>
+            <p className="mt-1 text-2xl font-bold text-green-900">
+              {grossProfit.toLocaleString('tr-TR', { maximumFractionDigits: 0 })} ₺
             </p>
-          </div>
-          <div>
-            <p className="text-xs text-green-700">Brüt Kar Marjı</p>
-            <p className="mt-1 font-mono text-lg font-semibold text-green-900">
-              {margin.toFixed(0)}%
+            <p className="mt-1 text-xs text-green-600">
+              Kar Marjı: {margin.toFixed(1)}%
             </p>
           </div>
         </div>

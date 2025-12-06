@@ -12,15 +12,19 @@
 
 import { useState } from 'react';
 import { ImarManualEntry } from './ImarManualEntry';
+import { BodrumConfigPanel } from './BodrumConfigPanel';
 import { calculateZoning } from '../../services/zoningCalculator';
+import { calculateAreaBreakdown } from '../../utils/imarCalculations';
 import type { ManualImarParams } from '../../utils/imarValidation';
-import type { ZoningResult } from '../../types/zoning';
+import type { ZoningResult, ImarData } from '../../types/zoning';
+import type { BodrumConfig } from '../../utils/imarCalculations';
 
 export interface ParselLookupWithImarProps {
   onComplete: (result: {
     parselAlani: number;
     imarParams: ManualImarParams;
     zoningResult: ZoningResult;
+    bodrumConfig?: BodrumConfig;
   }) => void;
 }
 
@@ -47,6 +51,16 @@ export function ParselLookupWithImar({
   const [parselAlani, setParselAlani] = useState<number | null>(null);
   const [isLoadingTKGM, setIsLoadingTKGM] = useState(false);
   const [tkgmError, setTkgmError] = useState<string | null>(null);
+
+  // Step 3: İmar data (after manual entry)
+  const [imarData, setImarData] = useState<ImarData | null>(null);
+  const [tabanAlani, setTabanAlani] = useState<number>(0);
+
+  // Step 4: Bodrum configuration (Phase 3.2)
+  const [bodrumConfig, setBodrumConfig] = useState<BodrumConfig>({
+    enabled: false,
+    usage: 'otopark',
+  });
 
   /**
    * Handle TKGM lookup
@@ -77,28 +91,70 @@ export function ParselLookupWithImar({
 
   /**
    * Handle İmar submission
-   * Calculate zoning and pass to parent
+   * Store imar data and proceed to bodrum config
    */
-  const handleImarSubmit = (imarParams: ManualImarParams) => {
+  const handleImarSubmit = (imarDataInput: ImarData) => {
     if (!parselAlani) {
       return;
     }
 
+    // Store imar data
+    setImarData(imarDataInput);
+    setTabanAlani(imarDataInput.calculated.tabanAlani);
+
+    // No need to change step - bodrum config appears inline
+  };
+
+  /**
+   * Handle final submission after bodrum config
+   * Calculate zoning and pass to parent
+   * Phase 3.2: Integrate bodrum-aware area calculations
+   */
+  const handleFinalSubmit = () => {
+    if (!parselAlani || !imarData) {
+      return;
+    }
+
     // Calculate zoning using Phase 2.1 engine
-    // Note: cikmaKatsayisi is optional in Phase 2.2, default to 1.0 (no projection)
-    const zoningResult = calculateZoning({
+    let zoningResult = calculateZoning({
       parselAlani,
-      taks: imarParams.taks,
-      kaks: imarParams.kaks,
-      maxKatAdedi: imarParams.katAdedi,
-      cikmaKatsayisi: 1.0, // Default: no balcony projection for simplified calculation
+      taks: imarData.inputs.taks,
+      kaks: imarData.inputs.kaks,
+      maxKatAdedi: imarData.calculated.uygulanacakKatAdedi,
+      cikmaKatsayisi: imarData.inputs.cikmaKatsayisi || 1.0,
     });
 
-    // Pass complete data to parent
+    // Phase 3.2: If bodrum is enabled with sellable usage, calculate adjusted area
+    if (bodrumConfig.enabled && (bodrumConfig.usage === 'konut' || bodrumConfig.usage === 'ticaret')) {
+      const areaBreakdown = calculateAreaBreakdown(
+        zoningResult,
+        bodrumConfig,
+        0.85 // net/gross ratio
+      );
+
+      // Update zoningResult with bodrum-adjusted sellable area
+      // toplamSatilabilir = netKullanim + bodrum sellable area
+      zoningResult = {
+        ...zoningResult,
+        netKullanimAlani: areaBreakdown.toplamSatilabilir,
+      };
+    }
+
+    // Convert ImarData to ManualImarParams for backward compatibility
+    // TODO: Update parent components to use ImarData
+    const imarParams = {
+      taks: imarData.inputs.taks,
+      kaks: imarData.inputs.kaks,
+      katAdedi: imarData.calculated.hesaplananKatAdedi,
+      cikmaKatsayisi: imarData.inputs.cikmaKatsayisi,
+    };
+
+    // Pass complete data to parent (including bodrum config)
     onComplete({
       parselAlani,
       imarParams,
       zoningResult,
+      bodrumConfig: bodrumConfig.enabled ? bodrumConfig : undefined,
     });
 
     setStep('complete');
@@ -238,13 +294,46 @@ export function ParselLookupWithImar({
           onSubmit={handleImarSubmit}
         />
 
-        {/* Back button */}
-        <button
-          onClick={() => setStep('input')}
-          className="text-sm text-gray-600 hover:text-gray-800"
-        >
-          ← Parsel bilgilerini değiştir
-        </button>
+        {/* Bodrum Configuration (shown after İmar data entered) */}
+        {imarData && tabanAlani > 0 && (
+          <>
+            <BodrumConfigPanel
+              config={bodrumConfig}
+              tabanAlani={tabanAlani}
+              onChange={setBodrumConfig}
+              className="border-blue-200"
+            />
+
+            {/* Final submit button */}
+            <div className="flex items-center justify-between">
+              <button
+                onClick={() => {
+                  setImarData(null);
+                  setStep('input');
+                }}
+                className="text-sm text-gray-600 hover:text-gray-800"
+              >
+                ← Başa dön
+              </button>
+              <button
+                onClick={handleFinalSubmit}
+                className="rounded-lg bg-blue-600 px-8 py-3 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+              >
+                İmar Hesaplamasına Devam Et →
+              </button>
+            </div>
+          </>
+        )}
+
+        {/* Back button (shown before bodrum config) */}
+        {!imarData && (
+          <button
+            onClick={() => setStep('input')}
+            className="text-sm text-gray-600 hover:text-gray-800"
+          >
+            ← Parsel bilgilerini değiştir
+          </button>
+        )}
       </div>
     );
   }

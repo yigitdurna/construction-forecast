@@ -362,9 +362,12 @@ function calculateSales(
     inputs.qualityLevel,
     salesOverrides || {}
   );
-  
+
+  // CRITICAL FIX: Calculate net saleable area (same as in calculateCosts)
+  const netSaleableSqm = inputs.totalSqm * NET_TO_GROSS_RATIO;
+
   // Calculate price from parameters (which now include location intelligence)
-  const priceResult = calculateSalesPriceFromParameters(salesParams, inputs.totalSqm);
+  const priceResult = calculateSalesPriceFromParameters(salesParams, netSaleableSqm);
   const currentPricePerSqm = priceResult.finalPricePerSqm;
 
   // Estimate number of units based on average unit size
@@ -374,7 +377,7 @@ function calculateSales(
   // Calculate future sales with appreciation AND NPV discount
   const futurePrice = calculateFutureSalesPrice(
     currentPricePerSqm,
-    inputs.totalSqm,
+    netSaleableSqm,
     constructionMonths,
     monthsToSell,
     monthlyAppreciationRate,

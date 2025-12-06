@@ -20,13 +20,73 @@ export interface UnitMixEditorProps {
 
 /**
  * Net to gross multipliers by unit type
+ * Phase 3.2: Added 1+0 with higher multiplier
  */
 const GROSS_MULTIPLIERS: Record<UnitTypeCode, number> = {
+  '1+0': 1.28, // 28% common areas (smaller units = more common area per unit)
   '1+1': 1.25, // 25% common areas
   '2+1': 1.20, // 20% common areas
   '3+1': 1.18, // 18% common areas
   '4+1': 1.15, // 15% common areas
   '5+1': 1.15, // 15% common areas
+};
+
+/**
+ * Preset unit distributions for common scenarios
+ * Phase 3.2: Quick presets for different market segments
+ */
+interface PresetDistribution {
+  label: string;
+  emoji: string;
+  description: string;
+  distribution: Partial<Record<UnitTypeCode, { percentage: number; defaultArea: number }>>;
+}
+
+const PRESETS: Record<string, PresetDistribution> = {
+  '1+0-agirlikli': {
+    label: '1+0 Ağırlıklı',
+    emoji: '🏢',
+    description: 'Kısa dönem kiralık / Airbnb',
+    distribution: {
+      '1+0': { percentage: 50, defaultArea: 38 },
+      '1+1': { percentage: 35, defaultArea: 50 },
+      '2+1': { percentage: 15, defaultArea: 85 },
+    },
+  },
+  '1+1-agirlikli': {
+    label: '1+1 Ağırlıklı',
+    emoji: '🏠',
+    description: 'Yabancı yatırımcı / Vatandaşlık',
+    distribution: {
+      '1+0': { percentage: 15, defaultArea: 38 },
+      '1+1': { percentage: 50, defaultArea: 50 },
+      '2+1': { percentage: 25, defaultArea: 85 },
+      '3+1': { percentage: 10, defaultArea: 120 },
+    },
+  },
+  'aile-agirlikli': {
+    label: 'Aile Ağırlıklı',
+    emoji: '👨‍👩‍👧',
+    description: 'Yerli aile konutları',
+    distribution: {
+      '1+1': { percentage: 15, defaultArea: 55 },
+      '2+1': { percentage: 40, defaultArea: 90 },
+      '3+1': { percentage: 35, defaultArea: 125 },
+      '4+1': { percentage: 10, defaultArea: 165 },
+    },
+  },
+  karma: {
+    label: 'Karma Dağılım',
+    emoji: '⚖️',
+    description: 'Dengeli portföy',
+    distribution: {
+      '1+0': { percentage: 15, defaultArea: 38 },
+      '1+1': { percentage: 30, defaultArea: 50 },
+      '2+1': { percentage: 30, defaultArea: 85 },
+      '3+1': { percentage: 20, defaultArea: 120 },
+      '4+1': { percentage: 5, defaultArea: 165 },
+    },
+  },
 };
 
 /**
@@ -39,7 +99,7 @@ export function UnitMixEditor({
   initialMix,
   onMixChange,
 }: UnitMixEditorProps): JSX.Element {
-  const unitTypes: UnitTypeCode[] = ['1+1', '2+1', '3+1', '4+1', '5+1'];
+  const unitTypes: UnitTypeCode[] = ['1+0', '1+1', '2+1', '3+1', '4+1', '5+1'];
 
   // Initialize unit counts and sizes
   const [unitCounts, setUnitCounts] = useState<Record<UnitTypeCode, number>>(() => {
@@ -146,11 +206,34 @@ export function UnitMixEditor({
    * Handle unit count change
    */
   const handleCountChange = (type: UnitTypeCode, value: string) => {
-    const count = parseInt(value) || 0;
-    setUnitCounts((prev) => ({
-      ...prev,
-      [type]: Math.max(0, count),
-    }));
+    // Allow empty string for better UX
+    if (value === '') {
+      setUnitCounts((prev) => ({
+        ...prev,
+        [type]: 0,
+      }));
+      return;
+    }
+
+    const count = parseInt(value, 10);
+    if (!isNaN(count) && count >= 0) {
+      setUnitCounts((prev) => ({
+        ...prev,
+        [type]: count,
+      }));
+    }
+  };
+
+  /**
+   * Handle blur - set to 0 if empty
+   */
+  const handleCountBlur = (type: UnitTypeCode, value: string) => {
+    if (value === '' || isNaN(parseInt(value, 10))) {
+      setUnitCounts((prev) => ({
+        ...prev,
+        [type]: 0,
+      }));
+    }
   };
 
   /**
@@ -160,6 +243,46 @@ export function UnitMixEditor({
     const optimized = calculateDefaultCounts(availableArea);
     setUnitCounts(optimized);
   };
+
+  /**
+   * Apply a preset distribution
+   */
+  const applyPreset = (presetKey: string) => {
+    const preset = PRESETS[presetKey];
+    if (!preset) return;
+
+    const newCounts: Partial<Record<UnitTypeCode, number>> = {
+      '1+0': 0,
+      '1+1': 0,
+      '2+1': 0,
+      '3+1': 0,
+      '4+1': 0,
+      '5+1': 0,
+    };
+
+    // Calculate unit counts from preset percentages
+    Object.entries(preset.distribution).forEach(([type, config]) => {
+      const targetArea = availableArea * (config.percentage / 100);
+      const count = Math.floor(targetArea / config.defaultArea);
+      newCounts[type as UnitTypeCode] = count;
+    });
+
+    setUnitCounts(newCounts as Record<UnitTypeCode, number>);
+  };
+
+  /**
+   * Calculate maximum capacity for each unit type
+   */
+  const calculateMaxCapacity = (): Record<UnitTypeCode, number> => {
+    const maxCapacity: Partial<Record<UnitTypeCode, number>> = {};
+    unitTypes.forEach((type) => {
+      const unitSize = unitSizes[type];
+      maxCapacity[type] = Math.floor(availableArea / unitSize);
+    });
+    return maxCapacity as Record<UnitTypeCode, number>;
+  };
+
+  const maxCapacity = calculateMaxCapacity();
 
   // Calculate current mix for display
   const currentMix = calculateUnitMix(unitCounts, unitSizes, availableArea);
@@ -250,8 +373,53 @@ export function UnitMixEditor({
         </div>
       )}
 
+      {/* Preset Buttons */}
+      <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
+        <p className="text-sm font-medium text-gray-700 mb-3">🎯 Hızlı Dağılım Seçenekleri:</p>
+        <div className="flex flex-wrap gap-2">
+          {Object.entries(PRESETS).map(([key, preset]) => (
+            <button
+              key={key}
+              onClick={() => applyPreset(key)}
+              className="px-4 py-2 text-sm border border-blue-300 bg-white rounded-lg hover:bg-blue-100 hover:border-blue-400 transition-colors shadow-sm"
+              title={preset.description}
+            >
+              <span className="mr-1">{preset.emoji}</span>
+              {preset.label}
+            </button>
+          ))}
+        </div>
+        <p className="mt-2 text-xs text-gray-600">
+          Tıklayarak hızlıca yaygın dağılımları uygulayabilirsiniz
+        </p>
+      </div>
+
+      {/* Maximum Capacity Info */}
+      <div className="rounded-lg border border-purple-200 bg-purple-50 p-4">
+        <p className="text-sm font-medium text-purple-900 mb-3">📊 Maksimum Kapasite (Her Tip için):</p>
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
+          {unitTypes.map((type) => (
+            <div key={type} className="bg-white rounded-lg border border-purple-200 p-3 text-center">
+              <p className="text-xs font-semibold text-gray-700">{type}</p>
+              <p className="text-lg font-bold text-purple-600 mt-1">
+                {maxCapacity[type]}
+              </p>
+              <p className="text-xs text-gray-500 mt-1">max daire</p>
+            </div>
+          ))}
+        </div>
+        <p className="mt-3 text-xs text-gray-600">
+          💡 Maksimum kapasite: {availableArea.toLocaleString('tr-TR', { maximumFractionDigits: 0 })} m² NET alan ÷ daire büyüklüğü
+        </p>
+      </div>
+
       {/* Unit Mix Table */}
       <div className="overflow-hidden rounded-lg border border-gray-200">
+        <div className="bg-gray-100 border-b border-gray-200 px-4 py-2">
+          <p className="text-xs font-medium text-gray-700">
+            Daire Dağılımı (NET {availableArea.toLocaleString('tr-TR', { maximumFractionDigits: 0 })} m² üzerinden)
+          </p>
+        </div>
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
@@ -262,10 +430,10 @@ export function UnitMixEditor({
                 Adet
               </th>
               <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-600">
-                m²/Daire
+                NET m²/Daire
               </th>
               <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-600">
-                Toplam Net
+                Toplam NET Alan
               </th>
               <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-600">
                 % Kullanım
@@ -288,9 +456,11 @@ export function UnitMixEditor({
                   <td className="whitespace-nowrap px-4 py-3">
                     <input
                       type="number"
-                      value={count}
+                      value={count === 0 ? '' : count}
                       onChange={(e) => handleCountChange(type, e.target.value)}
+                      onBlur={(e) => handleCountBlur(type, e.target.value)}
                       min={0}
+                      placeholder="0"
                       className="w-20 rounded border-gray-300 px-2 py-1 text-sm focus:border-blue-500 focus:ring-blue-500"
                     />
                   </td>

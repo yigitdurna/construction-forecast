@@ -8,6 +8,47 @@
  */
 
 // ============================================================================
+// İmar Data Model - User Inputs vs Calculated Values
+// ============================================================================
+
+/**
+ * İmar User Inputs
+ *
+ * What the user enters from belediye İmar Durumu belgesi
+ */
+export interface ImarUserInputs {
+  parselAlani: number;      // m² - Parcel area
+  taks: number;             // 0.01 - 1.00 - Building Coverage Ratio
+  kaks: number;             // 0.01 - 10.00 - Floor Area Ratio (Emsal)
+  cikmaKatsayisi?: number;  // 1.0 - 2.0 - Projection coefficient for balconies
+  yencokOverride?: number;  // Optional: if belediye specifies max floors
+  hmaxOverride?: number;    // Optional: if belediye specifies max height (meters)
+}
+
+/**
+ * İmar Calculated Values
+ *
+ * Derived values calculated from user inputs
+ */
+export interface ImarCalculatedValues {
+  tabanAlani: number;           // = parselAlani × TAKS (ground floor area)
+  toplamInsaatAlani: number;    // = parselAlani × KAKS (total construction area)
+  hesaplananKatAdedi: number;   // = KAKS / TAKS (calculated number of floors)
+  uygulanacakKatAdedi: number;  // = min(hesaplanan, yencok, hmax/3.5) (applied floors)
+  cikmaIleToplamAlan?: number;  // With çıkma coefficient applied
+}
+
+/**
+ * Complete İmar Data
+ *
+ * Combines user inputs and calculated values
+ */
+export interface ImarData {
+  inputs: ImarUserInputs;
+  calculated: ImarCalculatedValues;
+}
+
+// ============================================================================
 // TKGM API Types
 // ============================================================================
 
@@ -301,8 +342,10 @@ export interface ZoningResult {
 /**
  * Standard Turkish apartment unit types
  * Format: {number_of_bedrooms}+{number_of_living_rooms}
+ *
+ * Phase 3.2: Added 1+0 for smaller, investment-focused units
  */
-export type UnitTypeCode = '1+1' | '2+1' | '3+1' | '4+1' | '5+1';
+export type UnitTypeCode = '1+0' | '1+1' | '2+1' | '3+1' | '4+1' | '5+1';
 
 /**
  * Unit type definition with sizing and pricing
@@ -438,37 +481,49 @@ export interface ZoningError {
 /**
  * Standard unit size ranges (net area in m²)
  * Based on market research in Antalya
+ *
+ * Phase 3.2: Added 1+0 for smaller, investment-focused units
  */
 export const UNIT_SIZE_RANGES: Record<UnitTypeCode, UnitSizeRange> = {
-  '1+1': { min: 45, typical: 55, max: 65 },
-  '2+1': { min: 75, typical: 90, max: 110 },
-  '3+1': { min: 100, typical: 120, max: 140 },
-  '4+1': { min: 130, typical: 150, max: 180 },
-  '5+1': { min: 160, typical: 200, max: 250 },
+  '1+0': { min: 30, typical: 40, max: 50 },      // Phase 3.2: Smallest, high ROI
+  '1+1': { min: 45, typical: 50, max: 65 },      // Updated typical: 50m² (was 55m²)
+  '2+1': { min: 70, typical: 80, max: 110 },     // Updated typical: 80m² (was 90m²)
+  '3+1': { min: 100, typical: 115, max: 140 },   // Updated typical: 115m² (was 120m²)
+  '4+1': { min: 140, typical: 160, max: 180 },   // Updated typical: 160m² (was 150m²)
+  '5+1': { min: 180, typical: 220, max: 280 },   // Larger luxury units
 };
 
 /**
  * Typical unit mix for mid-range residential projects
  * Based on market demand in Antalya
+ *
+ * Phase 3.2: Updated for investment-focused Antalya market (2024-2025)
+ * - Smaller units (1+0, 1+1) = 50% for rental/investment
+ * - Family units (2+1, 3+1) = 35% for permanent residents
+ * - Luxury units (4+1) = 10% for premium buyers
  */
 export const DEFAULT_UNIT_MIX_RATIOS: Record<UnitTypeCode, number> = {
-  '1+1': 0.15,  // 15% - Singles, investors
-  '2+1': 0.35,  // 35% - Small families, most popular
-  '3+1': 0.40,  // 40% - Families, high demand
-  '4+1': 0.10,  // 10% - Large families, luxury
-  '5+1': 0.00,  // 0%  - Rare, very high-end only
+  '1+0': 0.15,     // 15% - Singles, Airbnb/rental investment, highest price per m²
+  '1+1': 0.35,     // 35% - MOST POPULAR - investors + small families
+  '2+1': 0.25,     // 25% - Small families, good demand
+  '3+1': 0.10,     // 10% - Families, moderate demand
+  '4+1': 0.10,     // 10% - Large families, luxury segment
+  '5+1': 0.05,     // 5%  - Very high-end only
 };
 
 /**
  * Net to gross area multipliers by unit type
  * Smaller units have higher common area share
+ *
+ * Phase 3.2: Added 1+0 with higher multiplier (more common area %)
  */
 export const NET_TO_GROSS_MULTIPLIERS: Record<UnitTypeCode, number> = {
-  '1+1': 1.25,  // 25% common areas
-  '2+1': 1.20,  // 20% common areas
-  '3+1': 1.18,  // 18% common areas
-  '4+1': 1.15,  // 15% common areas
-  '5+1': 1.15,  // 15% common areas
+  '1+0': 1.28,     // 28% common areas (elevators, stairs proportionally larger)
+  '1+1': 1.25,     // 25% common areas
+  '2+1': 1.20,     // 20% common areas
+  '3+1': 1.18,     // 18% common areas
+  '4+1': 1.15,     // 15% common areas
+  '5+1': 1.15,     // 15% common areas
 };
 
 /**

@@ -308,40 +308,15 @@ export async function generateFeasibilityPDF(
   addKeyValue('NPV ROI', `%${formatNumber(project.results.npvROI, 1)}`);
   y += 10;
 
-  // Scenario Analysis (if available)
-  if (financialResult?.scenarios) {
+  // Simplified Summary (scenarios removed)
+  if (financialResult) {
     addLine();
-    addSectionHeader('Senaryo Analizi');
+    addSectionHeader('Finansal Özet');
 
-    const scenarioRows = [
-      [
-        'İyimser',
-        formatCurrency(financialResult.scenarios.optimistic.totalRevenue),
-        formatCurrency(financialResult.scenarios.optimistic.totalCost),
-        formatCurrency(financialResult.scenarios.optimistic.profit),
-        formatPercent(financialResult.scenarios.optimistic.margin / 100),
-      ],
-      [
-        'Gerçekçi',
-        formatCurrency(financialResult.scenarios.base.totalRevenue),
-        formatCurrency(financialResult.scenarios.base.totalCost),
-        formatCurrency(financialResult.scenarios.base.profit),
-        formatPercent(financialResult.scenarios.base.margin / 100),
-      ],
-      [
-        'Kötümser',
-        formatCurrency(financialResult.scenarios.pessimistic.totalRevenue),
-        formatCurrency(financialResult.scenarios.pessimistic.totalCost),
-        formatCurrency(financialResult.scenarios.pessimistic.profit),
-        formatPercent(financialResult.scenarios.pessimistic.margin / 100),
-      ],
-    ];
-
-    addTable(
-      ['Senaryo', 'Gelir', 'Maliyet', 'Kar', 'Marj'],
-      scenarioRows,
-      [35, 35, 35, 35, 30]
-    );
+    addKeyValue('Toplam Gelir (NPV)', formatCurrency(financialResult.npvAdjustedRevenue));
+    addKeyValue('Toplam Maliyet', formatCurrency(financialResult.totalConstructionCost));
+    addKeyValue('Net Kar', formatCurrency(financialResult.npvProfit));
+    addKeyValue('Kar Marjı', formatPercent(financialResult.profitMargin / 100));
   }
 
   y += 10;
