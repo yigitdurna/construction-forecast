@@ -205,8 +205,8 @@ describe('Zoning Calculator', () => {
       // Brüt Kullanım = 2400 - 720 = 1680 m²
       expect(result.brutKullanimAlani).toBeCloseTo(1680, 1);
 
-      // Net Kullanım = 1680 × 0.85 = 1428 m²
-      expect(result.netKullanimAlani).toBeCloseTo(1428, 1);
+      // Net Kullanım = 1680 × 0.77 = 1293.6 m² (CORRECTED: real data shows 76.9%)
+      expect(result.netKullanimAlani).toBeCloseTo(1293.6, 1);
     });
 
     it('should handle single-story building (KAKS = TAKS)', () => {
@@ -524,12 +524,12 @@ describe('Zoning Calculator', () => {
       expect(summary.katAdedi).toContain('5');
       expect(summary.katAdedi).toContain('kat');
 
-      // Net = 1428 m² (from calculation: 2400 - 720 emsal dışı × 0.85)
-      expect(summary.netKullanim).toContain('1428');
+      // Net = 1293.6 m² (from calculation: 2400 - 720 emsal dışı × 0.77 - CORRECTED)
+      expect(summary.netKullanim).toContain('1293');
       expect(summary.netKullanim).toContain('m²');
 
-      // Kapasite = ~14 konut (1428 / 100)
-      expect(summary.kapasite).toContain('14');
+      // Kapasite = ~12 konut (1293.6 / 100) - CORRECTED from 14
+      expect(summary.kapasite).toContain('12');
       expect(summary.kapasite).toContain('konut');
     });
 

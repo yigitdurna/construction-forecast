@@ -51,7 +51,7 @@ export interface FeasibilityProject {
   };
 
   // Step 3: Pricing
-  constructionQuality: 'standard' | 'mid' | 'luxury';
+  constructionQuality: 'ozguntur'; // Single quality level - ÖZGÜNTUR standard
   constructionCostPerM2: number;
   salePrices: Record<UnitTypeCode, number>; // TL/m²
 
@@ -151,8 +151,8 @@ export function createEmptyProject(input?: CreateProjectInput): FeasibilityProje
       totalGrossArea: 0,
       utilization: 0,
     },
-    constructionQuality: 'mid',
-    constructionCostPerM2: 21500,
+    constructionQuality: 'ozguntur',
+    constructionCostPerM2: 27500, // ÖZGÜNTUR standard
     salePrices: {
       '1+0': 45000,  // Phase 3.2: Highest price per m² (small, high demand)
       '1+1': 42000,  // Updated: Higher than before (investor demand)

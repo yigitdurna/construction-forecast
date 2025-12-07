@@ -137,7 +137,7 @@ export function FeasibilityWizard(): JSX.Element {
         if (step1.bodrumConfig?.enabled &&
             (step1.bodrumConfig.usage === 'konut' || step1.bodrumConfig.usage === 'ticaret')) {
           const bodrumArea = step1.bodrumConfig.area || step1.zoningResult.tabanAlani;
-          const bodrumSellableArea = bodrumArea * 0.85; // Net/gross ratio
+          const bodrumSellableArea = bodrumArea * 0.77; // Net/gross ratio (real data: 76.9%)
           availableArea = availableArea + bodrumSellableArea;
         }
 

@@ -114,45 +114,45 @@ export const DEFAULT_MIX_RATIOS: Record<UnitTypeCode, number> = {
 // ============================================================================
 
 /**
- * Construction quality tier
+ * Construction quality tier - single ÖZGÜNTUR standard
+ *
+ * SIMPLIFIED: No more economy/mid/luxury tiers.
+ * All costs based on ÖZGÜNTUR RELIFE UNIQUE real project data.
  */
-export type ConstructionQuality = 'standard' | 'mid' | 'luxury';
+export type ConstructionQuality = 'ozguntur';
 
 /**
  * Quality tier configuration
  */
 export interface QualityTier {
   name: string;
-  costPerM2: number; // TL/m² construction cost
-  multiplier: number; // Multiplier vs base (mid = 1.0)
+  costPerM2: number; // TL/m² construction cost (GROSS area)
   description: string;
 }
 
 /**
- * Quality tiers with costs (per NET m²)
- * Based on 2024-2025 Antalya construction costs
- * Applied to NET usable area for simplicity
+ * Single quality tier - ÖZGÜNTUR Standard
+ *
+ * Based on:
+ * - ÖZGÜNTUR RELIFE UNIQUE real project data
+ * - insaathesabi.com methodology (2024-2025)
+ * - CostBreakdownEditor default categories (~27,500 TL/m²)
+ *
+ * Applied to GROSS building area (total construction area)
  */
 export const QUALITY_TIERS: Record<ConstructionQuality, QualityTier> = {
-  standard: {
-    name: 'Standart',
-    costPerM2: 28000, // Base: 28,000 TL/m² net
-    multiplier: 0.80,
-    description: 'Ekonomik malzemeler, standart kalite',
-  },
-  mid: {
-    name: 'Orta Kalite',
-    costPerM2: 35000, // Mid: 35,000 TL/m² net (BASE REFERENCE)
-    multiplier: 1.0,
-    description: 'Orta düzey malzemeler, iyi kalite',
-  },
-  luxury: {
-    name: 'Lüks',
-    costPerM2: 45000, // Luxury: 45,000 TL/m² net
-    multiplier: 1.29,
-    description: 'Yüksek kalite malzemeler, lüks bitirme',
+  ozguntur: {
+    name: 'ÖZGÜNTUR Standardı',
+    costPerM2: 27500, // ~27,500 TL/m² GROSS (matches CostBreakdownEditor defaults)
+    description: 'Grohe, Duravit, Kütahya Seramik - orta-üst segment kalite',
   },
 };
+
+/**
+ * Default construction cost per m² (GROSS)
+ * Used when no cost breakdown is provided
+ */
+export const DEFAULT_CONSTRUCTION_COST_PER_M2 = 27500;
 
 /**
  * Pricing configuration

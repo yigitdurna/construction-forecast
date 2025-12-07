@@ -545,10 +545,10 @@ export const ZONING_LIMITS = {
   MAX_CIKMA: 2.0,          // 100% projection
   TYPICAL_CIKMA: 1.60,
 
-  // Net/Gross ratio limits
+  // Net/Gross ratio limits (CORRECTED based on real project data)
   MIN_NET_GROSS: 0.60,     // High-rise with many elevators
-  MAX_NET_GROSS: 0.90,     // Very efficient design
-  TYPICAL_NET_GROSS: 0.85,
+  MAX_NET_GROSS: 0.85,     // Very efficient design (lowered from 0.90)
+  TYPICAL_NET_GROSS: 0.77, // ÖZGÜNTUR project: 76.9% (was 0.85)
 
   // Emsal dışı limits
   MAX_EMSAL_DISI_RATIO: 0.30, // Maximum 30% exempt

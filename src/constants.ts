@@ -9,9 +9,11 @@
 
 /**
  * Net to Gross Ratio: Percentage of total area that is saleable
- * Typically 85% of gross area is net (15% for common areas, walls, etc.)
+ * CORRECTED: Real project data (ÖZGÜNTUR RELIFE UNIQUE) shows 76.9%
+ * Previously assumed 85%, but actual measurement from DXF files shows ~77%
+ * This accounts for common areas, walls, corridors, and mechanical spaces
  */
-export const NET_TO_GROSS_RATIO = 0.85
+export const NET_TO_GROSS_RATIO = 0.77
 
 /**
  * S-Curve Distribution Parameters

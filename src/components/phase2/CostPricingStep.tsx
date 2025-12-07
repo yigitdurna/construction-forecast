@@ -12,7 +12,7 @@ import type {
   UnitPricing,
   ParselImarData,
 } from '../../types/feasibility';
-import { QUALITY_TIERS, WIZARD_TEXT } from '../../types/feasibility';
+import { DEFAULT_CONSTRUCTION_COST_PER_M2, WIZARD_TEXT } from '../../types/feasibility';
 import { CostBreakdownEditor, CostBreakdownData } from './CostBreakdownEditor';
 
 export interface CostPricingStepProps {
@@ -24,17 +24,24 @@ export interface CostPricingStepProps {
 
 /**
  * District-based default sale prices (TL/m² NET area)
- * Based on 2024-2025 Antalya market data
- * NEW CONSTRUCTION PRICES (not resale)
+ * Based on 2024-2025 Antalya market data - NEW CONSTRUCTION PRICES
+ * Source: Endeksa.com December 2024 + 25-35% new construction premium
+ *
+ * Endeksa resale averages (Dec 2024):
+ * - Muratpaşa: 46,383 TL/m² (range: 29K-81K by mahalle)
+ * - Konyaaltı: ~65,000 TL/m²
+ * - Kepez: ~35,000 TL/m²
+ *
+ * New construction typically commands 25-35% premium over resale
  */
 const DISTRICT_BASE_PRICES: Record<string, number> = {
-  kepez: 45000,       // Budget/developing area
-  doseмealtı: 40000,  // Suburban
-  muratpasa: 65000,   // City center
-  konyaalti: 85000,   // Premium beach district
-  lara: 95000,        // Luxury resort area
-  alanya: 55000,      // Resort town
-  default: 65000,     // Default to mid-range
+  kepez: 55000,       // Budget/developing area (35K resale + 57% premium)
+  dosemealtı: 50000,  // Suburban/rural
+  muratpasa: 75000,   // City center (46K resale + 63% premium)
+  konyaalti: 100000,  // Premium beach district (65K resale + 54% premium)
+  lara: 120000,       // Luxury resort area
+  alanya: 70000,      // Resort town
+  default: 75000,     // Default to mid-range
 };
 
 /**
@@ -76,13 +83,13 @@ export function CostPricingStep({
 
   // Update pricing config whenever cost breakdown, land cost, or prices change
   useEffect(() => {
-    // Use cost breakdown if available, otherwise fallback to default mid-tier
+    // Use cost breakdown if available, otherwise fallback to default ÖZGÜNTUR cost
     const costPerM2 = costBreakdown
       ? costBreakdown.totalCostPerM2
-      : QUALITY_TIERS.mid.costPerM2;
+      : DEFAULT_CONSTRUCTION_COST_PER_M2;
 
     const config: PricingConfig = {
-      constructionQuality: 'mid', // Default to mid quality
+      constructionQuality: 'ozguntur', // Single quality level - ÖZGÜNTUR standard
       constructionCostPerM2: costPerM2,
       landCost: landCost > 0 ? landCost : undefined, // Only include if > 0
       salePrices,
@@ -173,12 +180,12 @@ export function CostPricingStep({
   const grossArea = step1Data.zoningResult.toplamInsaatAlani;
   const costPerM2Gross = costBreakdown
     ? costBreakdown.totalCostPerM2
-    : QUALITY_TIERS.mid.costPerM2;
+    : DEFAULT_CONSTRUCTION_COST_PER_M2;
 
   // Base construction cost from cost breakdown (on GROSS area)
   const baseConstructionCost = costBreakdown
     ? costBreakdown.totalCost
-    : grossArea * QUALITY_TIERS.mid.costPerM2;
+    : grossArea * DEFAULT_CONSTRUCTION_COST_PER_M2;
 
   // Optional: Additional common area premium (luxury finishes in lobbies, etc.)
   // This is ON TOP of the base construction cost for extra quality in common areas

@@ -99,13 +99,11 @@ export function wizardStateToProject(
       };
 
   // Extract pricing from step 3
-  const constructionQuality = state.step3?.constructionQuality ||
-    existingProject?.constructionQuality ||
-    'mid';
+  const constructionQuality = 'ozguntur' as const; // Single quality level - ÖZGÜNTUR standard
 
   const constructionCostPerM2 = state.step3?.constructionCostPerM2 ||
     existingProject?.constructionCostPerM2 ||
-    21500;
+    27500; // ÖZGÜNTUR standard
 
   const salePrices = state.step3?.salePrices ||
     existingProject?.salePrices || {
@@ -235,7 +233,7 @@ export function projectToWizardState(
   // Build step 3 data if available
   const step3 = project.constructionCostPerM2 > 0
     ? {
-        constructionQuality: project.constructionQuality,
+        constructionQuality: 'ozguntur' as const, // Single quality level
         constructionCostPerM2: project.constructionCostPerM2,
         salePrices: project.salePrices,
       }

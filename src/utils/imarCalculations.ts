@@ -134,13 +134,13 @@ export function calculateEmsalHarici(
  *
  * @param zoningResult - Base zoning calculation from Phase 2.1
  * @param bodrumConfig - Bodrum kat configuration
- * @param netGrossRatio - Net to gross ratio (default: 0.85)
+ * @param netGrossRatio - Net to gross ratio (default: 0.77, real data: 76.9%)
  * @returns Complete area breakdown
  */
 export function calculateAreaBreakdown(
   zoningResult: ZoningResult,
   bodrumConfig?: BodrumConfig,
-  netGrossRatio: number = 0.85
+  netGrossRatio: number = 0.77
 ): AreaBreakdown {
   const {
     parselAlani,

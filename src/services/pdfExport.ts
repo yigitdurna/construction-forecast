@@ -266,12 +266,8 @@ export async function generateFeasibilityPDF(
   // Section 3: Maliyet ve Fiyatlandırma
   addSectionHeader('3. Maliyet ve Fiyatlandırma');
 
-  const qualityMap = {
-    standard: 'Standart',
-    mid: 'Orta Kalite',
-    luxury: 'Lüks',
-  };
-  addKeyValue('İnşaat Kalitesi', qualityMap[project.constructionQuality]);
+  // Single quality level - ÖZGÜNTUR standard
+  addKeyValue('İnşaat Kalitesi', 'ÖZGÜNTUR Standardı');
   addKeyValue(
     'İnşaat Maliyeti',
     `${formatCurrency(project.constructionCostPerM2)}/m²`

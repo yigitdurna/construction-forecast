@@ -57,7 +57,7 @@ export function ImarPreview({
 
   const netKullanimAlani =
     toplamInsaatAlani !== undefined && emsalDisiMax !== undefined
-      ? (toplamInsaatAlani - emsalDisiMax) * 0.85
+      ? (toplamInsaatAlani - emsalDisiMax) * 0.77 // CORRECTED: real data shows 76.9%
       : undefined;
 
   // Show placeholder if no values entered yet
@@ -299,7 +299,7 @@ export function ImarPreview({
                 <span className="text-sm font-semibold text-blue-900">
                   Net Kullanım Alanı
                 </span>
-                <span className="ml-2 text-xs text-blue-600">(~85%)</span>
+                <span className="ml-2 text-xs text-blue-600">(~77%)</span>
               </div>
               <span
                 className={`font-mono text-sm font-bold ${

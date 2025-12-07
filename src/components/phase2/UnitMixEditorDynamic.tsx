@@ -63,12 +63,13 @@ export function UnitMixEditorDynamic({
       }));
     }
 
-    // Default: Create standard Turkish apartment types
+    // Default: Turkish apartment types based on ÖZGÜNTUR RELIFE UNIQUE real data
+    // Real 3+1 units: TİP-1 = 122.05 m² NET, TİP-2 = 118.30 m² NET
     return [
-      { id: generateId(), type: '1+1', count: 4, netAreaPerUnit: 65 },
-      { id: generateId(), type: '2+1', count: 6, netAreaPerUnit: 90 },
-      { id: generateId(), type: '3+1', count: 4, netAreaPerUnit: 120 },
-      { id: generateId(), type: '4+1', count: 2, netAreaPerUnit: 150 },
+      { id: generateId(), type: '1+1', count: 2, netAreaPerUnit: 55 },   // Studios for investors
+      { id: generateId(), type: '2+1', count: 4, netAreaPerUnit: 95 },   // Small families
+      { id: generateId(), type: '3+1', count: 6, netAreaPerUnit: 120 },  // Main family unit (ÖZGÜNTUR: 118-122 m²)
+      { id: generateId(), type: '4+1', count: 2, netAreaPerUnit: 150 },  // Large families
     ];
   });
 
@@ -218,12 +219,13 @@ export function UnitMixEditorDynamic({
    * Auto-optimize unit mix
    */
   const handleOptimize = () => {
-    // Create optimized mix based on available area
+    // Create optimized mix based on available area (Antalya market demand + real project sizes)
+    // Ratios: 10% 1+1, 25% 2+1, 50% 3+1 (main family), 15% 4+1
     const optimized: EditableUnit[] = [
-      { id: generateId(), type: '1+1', count: Math.floor(availableArea * 0.15 / 65), netAreaPerUnit: 65 },
-      { id: generateId(), type: '2+1', count: Math.floor(availableArea * 0.35 / 90), netAreaPerUnit: 90 },
-      { id: generateId(), type: '3+1', count: Math.floor(availableArea * 0.40 / 120), netAreaPerUnit: 120 },
-      { id: generateId(), type: '4+1', count: Math.floor(availableArea * 0.10 / 150), netAreaPerUnit: 150 },
+      { id: generateId(), type: '1+1', count: Math.floor(availableArea * 0.10 / 55), netAreaPerUnit: 55 },
+      { id: generateId(), type: '2+1', count: Math.floor(availableArea * 0.25 / 95), netAreaPerUnit: 95 },
+      { id: generateId(), type: '3+1', count: Math.floor(availableArea * 0.50 / 120), netAreaPerUnit: 120 },
+      { id: generateId(), type: '4+1', count: Math.floor(availableArea * 0.15 / 150), netAreaPerUnit: 150 },
     ].filter(u => u.count > 0);
 
     setUnits(optimized);
@@ -233,10 +235,11 @@ export function UnitMixEditorDynamic({
    * Reset to defaults
    */
   const handleReset = () => {
+    // Reset to ÖZGÜNTUR-validated defaults
     setUnits([
-      { id: generateId(), type: '1+1', count: 4, netAreaPerUnit: 65 },
-      { id: generateId(), type: '2+1', count: 6, netAreaPerUnit: 90 },
-      { id: generateId(), type: '3+1', count: 4, netAreaPerUnit: 120 },
+      { id: generateId(), type: '1+1', count: 2, netAreaPerUnit: 55 },
+      { id: generateId(), type: '2+1', count: 4, netAreaPerUnit: 95 },
+      { id: generateId(), type: '3+1', count: 6, netAreaPerUnit: 120 }, // ÖZGÜNTUR: 118-122 m²
       { id: generateId(), type: '4+1', count: 2, netAreaPerUnit: 150 },
     ]);
   };
