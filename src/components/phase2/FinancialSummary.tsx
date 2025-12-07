@@ -59,19 +59,18 @@ export function FinancialSummary({
   const [assumptions, setAssumptions] = useState<FinancialAssumptions>(DEFAULT_ASSUMPTIONS);
   const [showAssumptions, setShowAssumptions] = useState(false);
 
-  // Building cost conversion factor
-  // Interior finish cost × this factor = building average cost
-  // Building includes: parking (~8K TL/m²), common areas (~20K TL/m²), residential (~35K TL/m²)
-  // Professional standard: building average ≈ 50% of interior finish cost
-  const [buildingCostFactor, setBuildingCostFactor] = useState(0.50);
-
   // Calculate financial metrics on mount or when inputs change
   useEffect(() => {
     calculateFinancials();
-  }, [step1Data, step2Data, step3Data, assumptions, buildingCostFactor]);
+  }, [step1Data, step2Data, step3Data, assumptions]);
 
   /**
    * Calculate comprehensive financial analysis
+   *
+   * Cost calculation: Uses GROSS area (building total) × cost per GROSS m²
+   * Revenue calculation: Uses NET area × sale price per NET m²
+   *
+   * This matches Turkish industry standards where contractors quote per GROSS m²
    */
   async function calculateFinancials() {
     setIsCalculating(true);
@@ -79,13 +78,10 @@ export function FinancialSummary({
     try {
       const { constructionCostPerM2, salePrices, landCost } = step3Data;
 
-      // CRITICAL FIX: Use BUILDING TOTAL area for construction cost, not apartment gross
-      // Building total = parsel × KAKS × çıkma (includes all areas: apartments, parking, common)
-      // The constructionCostPerM2 is for finished interior, so we apply buildingCostFactor
-      // to get building-average cost (professional standard ≈ 50% of interior cost)
+      // Construction cost is calculated on GROSS area (building total)
+      // This includes: apartments, common areas, stairs, elevators, parking
       const buildingTotalArea = step1Data.zoningResult.toplamInsaatAlani;
-      const buildingAverageCostPerM2 = constructionCostPerM2 * buildingCostFactor;
-      const totalConstructionCost = buildingTotalArea * buildingAverageCostPerM2;
+      const totalConstructionCost = buildingTotalArea * constructionCostPerM2;
 
       // Phase 3.3: Include land cost in total project cost
       const landCostValue = landCost || 0;
@@ -408,17 +404,6 @@ export function FinancialSummary({
               max={5}
               decimals={1}
               description="NPV hesaplaması için aylık iskonto oranı"
-            />
-            <EditableParameter
-              label="Bina Maliyet Çarpanı"
-              value={buildingCostFactor * 100}
-              unit="%"
-              source="sektor"
-              onChange={(val) => setBuildingCostFactor(val / 100)}
-              min={40}
-              max={70}
-              decimals={0}
-              description="İç mekan maliyetinin yüzde kaçı bina ortalaması olarak kullanılır (otopark, ortak alan dahil). Profesyonel standart: %50"
             />
           </div>
         )}

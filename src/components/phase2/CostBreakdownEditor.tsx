@@ -1,8 +1,11 @@
 /**
  * Cost Breakdown Editor Component
  *
- * Expandable cost categories with editable line items
- * Shows progress bars and allows per-item cost adjustments
+ * Turkish construction cost categories based on industry standards
+ * Reference: insaathesabi.com methodology (2024-2025)
+ *
+ * KEY PRINCIPLE: All costs are applied to GROSS area (building total)
+ * This matches how Turkish contractors calculate and quote projects.
  */
 
 import { useState, useMemo } from 'react';
@@ -14,91 +17,98 @@ import { useState, useMemo } from 'react';
 export interface CostItem {
   id: string;
   name: string;
-  perM2: number; // TL/m²
+  perM2: number; // TL/m² GROSS (building total)
 }
 
 export interface CostCategory {
   id: string;
   name: string;
+  icon: string;
   items: CostItem[];
+  percentage?: number; // Expected % of total (for reference)
 }
 
 export interface CostBreakdownData {
   categories: CostCategory[];
-  totalCostPerM2: number; // Sum of all items
-  totalCost: number; // totalCostPerM2 × netArea
+  totalCostPerM2: number; // Sum of all items (per GROSS m²)
+  totalCost: number; // totalCostPerM2 × grossArea
+  grossArea: number; // Building total area used
 }
 
 // ============================================================================
-// Default Cost Structure (Antalya 2024-2025)
+// Turkish Construction Cost Structure (2024-2025)
+// Based on insaathesabi.com methodology and Turkish market data
+//
+// IMPORTANT: All values are per GROSS m² (building total)
+// Typical building total in Turkey: ~15,000-25,000 TL/m² (late 2024)
 // ============================================================================
 
 const DEFAULT_COST_CATEGORIES: CostCategory[] = [
   {
     id: 'kaba',
     name: 'Kaba İnşaat',
+    icon: '🏗️',
+    percentage: 40,
     items: [
-      { id: 'beton', name: 'Beton', perM2: 3500 },
-      { id: 'demir', name: 'Demir', perM2: 2800 },
-      { id: 'kalip', name: 'Kalıp İşçiliği', perM2: 1500 },
-      { id: 'duvar', name: 'Duvar & Tuğla', perM2: 1400 },
+      { id: 'hafriyat', name: 'Hafriyat & Temel Kazısı', perM2: 800 },
+      { id: 'beton', name: 'Beton İşleri', perM2: 3200 },
+      { id: 'demir', name: 'Demir İşleri', perM2: 2400 },
+      { id: 'kalip', name: 'Kalıp İşçiliği', perM2: 1200 },
+      { id: 'duvar', name: 'Duvar İşleri (Tuğla/Gazbeton)', perM2: 800 },
     ],
   },
   {
     id: 'tesisat',
-    name: 'Tesisat (MEY)',
+    name: 'Tesisat (MEP)',
+    icon: '🔧',
+    percentage: 15,
     items: [
-      { id: 'elektrik', name: 'Elektrik', perM2: 2000 },
-      { id: 'su', name: 'Su Tesisatı', perM2: 1800 },
-      { id: 'dogalgaz', name: 'Doğalgaz', perM2: 800 },
-      { id: 'hvac', name: 'Havalandırma', perM2: 900 },
+      { id: 'elektrik', name: 'Elektrik Tesisatı', perM2: 1000 },
+      { id: 'su', name: 'Su Tesisatı', perM2: 600 },
+      { id: 'kanal', name: 'Kanalizasyon', perM2: 400 },
+      { id: 'dogalgaz', name: 'Doğalgaz Tesisatı', perM2: 300 },
+      { id: 'hvac', name: 'Isıtma/Soğutma (HVAC)', perM2: 800 },
     ],
   },
   {
     id: 'ince',
-    name: 'İnce İşaat',
+    name: 'İnce İnşaat',
+    icon: '🎨',
+    percentage: 30,
     items: [
-      { id: 'siva', name: 'Sıva & Boya', perM2: 1500 },
-      { id: 'seramik', name: 'Seramik & Fayans', perM2: 2200 },
-      { id: 'parke', name: 'Parke', perM2: 1100 },
-      { id: 'alcipan', name: 'Alçıpan', perM2: 1000 },
+      { id: 'siva', name: 'Sıva İşleri', perM2: 600 },
+      { id: 'boya', name: 'Boya Badana', perM2: 400 },
+      { id: 'seramik', name: 'Seramik & Fayans', perM2: 800 },
+      { id: 'parke', name: 'Parke/Zemin Kaplama', perM2: 600 },
+      { id: 'alcipan', name: 'Alçıpan/Asma Tavan', perM2: 500 },
+      { id: 'mutfak', name: 'Mutfak Dolabı', perM2: 600 },
+      { id: 'banyo', name: 'Banyo Vitrifiye', perM2: 500 },
     ],
   },
   {
     id: 'dograma',
-    name: 'Doğrama',
+    name: 'Doğrama & Cephe',
+    icon: '🪟',
+    percentage: 10,
     items: [
-      { id: 'pencere', name: 'PVC Pencere', perM2: 1800 },
-      { id: 'ickapi', name: 'İç Kapılar', perM2: 900 },
-      { id: 'diskapi', name: 'Dış Kapı', perM2: 600 },
+      { id: 'pencere', name: 'PVC/Alüminyum Pencere', perM2: 800 },
+      { id: 'diskapi', name: 'Dış Kapı (Çelik)', perM2: 200 },
+      { id: 'ickapi', name: 'İç Kapılar', perM2: 300 },
+      { id: 'cephe', name: 'Dış Cephe Kaplaması', perM2: 600 },
+      { id: 'mantolama', name: 'Isı Yalıtımı (Mantolama)', perM2: 500 },
     ],
   },
   {
-    id: 'cephe',
-    name: 'Dış Cephe',
+    id: 'diger',
+    name: 'Diğer Giderler',
+    icon: '📋',
+    percentage: 5,
     items: [
-      { id: 'kaplama', name: 'Dış Cephe Kaplaması', perM2: 1800 },
-      { id: 'mantolama', name: 'Isı Yalıtımı (Mantolama)', perM2: 1200 },
-      { id: 'suyalitim', name: 'Su Yalıtımı', perM2: 1000 },
-    ],
-  },
-  {
-    id: 'iscilik',
-    name: 'İşçilik',
-    items: [
-      { id: 'genel', name: 'Genel İşçilik', perM2: 3500 },
-      { id: 'sgk', name: 'SGK & İSG', perM2: 1200 },
-      { id: 'santiye', name: 'Şantiye Giderleri', perM2: 800 },
-    ],
-  },
-  {
-    id: 'proje',
-    name: 'Proje & Ruhsat',
-    items: [
-      { id: 'mimari', name: 'Mimari Proje', perM2: 600 },
-      { id: 'statik', name: 'Statik Proje', perM2: 400 },
-      { id: 'harc', name: 'Belediye Harçları', perM2: 400 },
-      { id: 'denetim', name: 'Yapı Denetim', perM2: 300 },
+      { id: 'proje', name: 'Proje & Mühendislik', perM2: 300 },
+      { id: 'denetim', name: 'Yapı Denetim', perM2: 150 },
+      { id: 'harc', name: 'Belediye Harçları', perM2: 200 },
+      { id: 'sgk', name: 'SGK & İş Güvenliği', perM2: 300 },
+      { id: 'santiye', name: 'Şantiye Giderleri', perM2: 250 },
     ],
   },
 ];
@@ -135,11 +145,13 @@ function ProgressBar({ percentage, color = 'blue' }: ProgressBarProps) {
 // ============================================================================
 
 export interface CostBreakdownEditorProps {
-  netArea: number; // m² from apartment builder
+  grossArea: number; // Building total m² (toplamInsaatAlani)
+  netArea: number; // Net sellable m² (for display reference)
   onCostChange: (data: CostBreakdownData) => void;
 }
 
 export function CostBreakdownEditor({
+  grossArea,
   netArea,
   onCostChange,
 }: CostBreakdownEditorProps): JSX.Element {
@@ -153,6 +165,7 @@ export function CostBreakdownEditor({
 
   /**
    * Calculate totals and percentages
+   * All costs are per GROSS m² (building total)
    */
   const calculations = useMemo(() => {
     const categoryTotals: Record<string, number> = {};
@@ -174,9 +187,9 @@ export function CostBreakdownEditor({
       categoryTotals,
       categoryPercentages,
       totalCostPerM2: grandTotal,
-      totalCost: grandTotal * netArea,
+      totalCost: grandTotal * grossArea, // Use GROSS area for total cost
     };
-  }, [categories, netArea]);
+  }, [categories, grossArea]);
 
   /**
    * Notify parent of cost changes
@@ -186,8 +199,9 @@ export function CostBreakdownEditor({
       categories,
       totalCostPerM2: calculations.totalCostPerM2,
       totalCost: calculations.totalCost,
+      grossArea, // Include gross area in the data
     });
-  }, [categories, calculations, onCostChange]);
+  }, [categories, calculations, onCostChange, grossArea]);
 
   /**
    * Toggle category expansion
@@ -300,7 +314,7 @@ export function CostBreakdownEditor({
           const isExpanded = expandedCategories.has(category.id);
           const categoryTotal = calculations.categoryTotals[category.id];
           const categoryPercent = calculations.categoryPercentages[category.id];
-          const categoryCost = categoryTotal * netArea;
+          const categoryCost = categoryTotal * grossArea;
 
           return (
             <div
@@ -312,15 +326,16 @@ export function CostBreakdownEditor({
                 onClick={() => toggleCategory(category.id)}
                 className="w-full px-4 py-3 flex items-center justify-between hover:bg-gray-50 transition-colors"
               >
-                <div className="flex items-center gap-4 flex-1">
-                  <span className="text-sm font-medium text-gray-900 w-32">
+                <div className="flex items-center gap-3 flex-1">
+                  <span className="text-lg">{category.icon}</span>
+                  <span className="text-sm font-medium text-gray-900 w-36">
                     {category.name}
                   </span>
                   <ProgressBar percentage={categoryPercent} />
-                  <span className="text-sm text-gray-600 w-16 text-right">
+                  <span className="text-sm text-gray-600 w-14 text-right">
                     {categoryPercent.toFixed(0)}%
                   </span>
-                  <span className="text-sm font-mono font-semibold text-gray-900 w-24 text-right">
+                  <span className="text-sm font-mono font-semibold text-gray-900 w-28 text-right">
                     {formatCurrency(categoryCost)}
                   </span>
                 </div>
@@ -346,7 +361,7 @@ export function CostBreakdownEditor({
                 <div className="border-t border-gray-200 bg-gray-50 px-4 py-3">
                   <div className="space-y-2">
                     {category.items.map((item) => {
-                      const itemCost = item.perM2 * netArea;
+                      const itemCost = item.perM2 * grossArea;
                       return (
                         <div
                           key={item.id}
@@ -382,7 +397,7 @@ export function CostBreakdownEditor({
                             </span>
                             <span className="text-xs text-gray-400 w-8">×</span>
                             <span className="text-xs text-gray-600 w-16 text-right">
-                              {netArea.toLocaleString('tr-TR', {
+                              {grossArea.toLocaleString('tr-TR', {
                                 maximumFractionDigits: 0,
                               })}
                             </span>
@@ -433,10 +448,10 @@ export function CostBreakdownEditor({
       </div>
 
       {/* Info Box */}
-      <div className="rounded-lg bg-yellow-50 border border-yellow-200 p-3">
+      <div className="rounded-lg bg-blue-50 border border-blue-200 p-3">
         <div className="flex">
           <svg
-            className="h-5 w-5 text-yellow-600 mt-0.5"
+            className="h-5 w-5 text-blue-600 mt-0.5"
             fill="currentColor"
             viewBox="0 0 20 20"
           >
@@ -447,11 +462,13 @@ export function CostBreakdownEditor({
             />
           </svg>
           <div className="ml-3">
-            <p className="text-sm text-yellow-800">
-              <strong>Not:</strong> Tüm maliyetler NET kullanım alanı (
-              {netArea.toLocaleString('tr-TR', { maximumFractionDigits: 0 })} m²
-              ) üzerinden hesaplanmıştır. Fiyatları düzenleyerek özel senaryolar
-              oluşturabilirsiniz.
+            <p className="text-sm text-blue-800">
+              <strong>Alan Bilgisi:</strong> Maliyetler <strong>toplam inşaat alanı</strong> ({grossArea.toLocaleString('tr-TR', { maximumFractionDigits: 0 })} m²) üzerinden hesaplanır.
+              Bu alan; daireler, ortak alanlar, merdiven, asansör, otopark dahil tüm kapalı alandır.
+            </p>
+            <p className="text-xs text-blue-600 mt-1">
+              Satılabilir NET alan: {netArea.toLocaleString('tr-TR', { maximumFractionDigits: 0 })} m²
+              (Net/Brüt oranı: {grossArea > 0 ? ((netArea / grossArea) * 100).toFixed(0) : 0}%)
             </p>
           </div>
         </div>

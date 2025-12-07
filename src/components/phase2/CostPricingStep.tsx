@@ -168,31 +168,35 @@ export function CostPricingStep({
 
   const unitPricing = calculateUnitPricing();
 
-  // CRITICAL FIX: Use NET area (not GROSS) for cost calculation
-  // Use cost breakdown total if available, otherwise fall back to default mid-tier
-  const costPerM2 = costBreakdown
+  // Construction cost is now calculated on GROSS area by CostBreakdownEditor
+  // Use the total from cost breakdown, which already includes all categories
+  const grossArea = step1Data.zoningResult.toplamInsaatAlani;
+  const costPerM2Gross = costBreakdown
     ? costBreakdown.totalCostPerM2
     : QUALITY_TIERS.mid.costPerM2;
 
-  // Calculate unit interior costs
-  const unitInteriorCost = unitMix.totalNetArea * costPerM2;
+  // Base construction cost from cost breakdown (on GROSS area)
+  const baseConstructionCost = costBreakdown
+    ? costBreakdown.totalCost
+    : grossArea * QUALITY_TIERS.mid.costPerM2;
 
-  // Calculate common area costs if enabled
+  // Optional: Additional common area premium (luxury finishes in lobbies, etc.)
+  // This is ON TOP of the base construction cost for extra quality in common areas
   const commonAreaM2 = unitMix.totalNetArea * (commonAreaPercent / 100);
-  const commonAreaCostPerM2 = costPerM2 * commonAreaMultiplier;
-  const commonAreaCost = includeCommonAreas ? commonAreaM2 * commonAreaCostPerM2 : 0;
+  const commonAreaPremiumPerM2 = costPerM2Gross * (commonAreaMultiplier - 1); // Extra cost
+  const commonAreaPremium = includeCommonAreas ? commonAreaM2 * commonAreaPremiumPerM2 : 0;
 
-  // Total construction cost
-  const totalConstructionCost = unitInteriorCost + commonAreaCost;
+  // Total construction cost = base + optional common area premium
+  const totalConstructionCost = baseConstructionCost + commonAreaPremium;
 
   const totalRevenue = unitPricing.reduce((sum, u) => sum + u.totalRevenue, 0);
   const grossProfit = totalRevenue - totalConstructionCost;
   const margin = totalRevenue > 0 ? (grossProfit / totalRevenue) * 100 : 0;
 
-  // Per-m² calculations for display
-  const totalConstructionCostPerM2 = unitMix.totalNetArea > 0
-    ? totalConstructionCost / unitMix.totalNetArea
-    : costPerM2;
+  // Per-m² calculations for display (show per GROSS m² for cost, per NET m² for revenue)
+  const totalConstructionCostPerM2 = grossArea > 0
+    ? totalConstructionCost / grossArea
+    : costPerM2Gross;
   const averageRevenuePerM2 = unitMix.totalNetArea > 0
     ? totalRevenue / unitMix.totalNetArea
     : 0;
@@ -269,6 +273,7 @@ export function CostPricingStep({
 
       {/* Cost Breakdown Editor - Expandable Categories */}
       <CostBreakdownEditor
+        grossArea={step1Data.zoningResult.toplamInsaatAlani}
         netArea={unitMix.totalNetArea}
         onCostChange={setCostBreakdown}
       />
@@ -306,7 +311,7 @@ export function CostPricingStep({
         </div>
       </div>
 
-      {/* Common Area Costs - Optional Feature */}
+      {/* Common Area Premium - Optional Feature */}
       <div className="rounded-lg border border-gray-200 bg-white p-6">
         <div className="flex items-start gap-3">
           <input
@@ -319,10 +324,10 @@ export function CostPricingStep({
           <div className="flex-1">
             <label htmlFor="includeCommonAreas" className="cursor-pointer">
               <h4 className="text-base font-semibold text-gray-900">
-                🏛️ Ortak Alan Maliyetlerini Dahil Et
+                🏛️ Lüks Ortak Alan Primi Ekle
               </h4>
               <p className="mt-1 text-xs text-gray-600">
-                Lobiler, koridorlar, fitness, sauna gibi ortak alanların yüksek kaliteli bitirme maliyetlerini hesaba katın
+                Lobiler, koridorlar, fitness, sauna gibi ortak alanlara ekstra lüks bitirme maliyeti ekleyin (temel maliyet zaten yukarıda dahil)
               </p>
             </label>
 
@@ -367,7 +372,7 @@ export function CostPricingStep({
                     <option value="2.0">2.0x - Ultra Lüks (Spa, havuz, sanat eserleri)</option>
                   </select>
                   <p className="mt-1 text-xs text-gray-500">
-                    Ortak alanlar daire içinden ne kadar daha pahalı? (Maliyet: {commonAreaCostPerM2.toLocaleString('tr-TR', { maximumFractionDigits: 0 })} ₺/m²)
+                    Ortak alanlara eklenecek prim çarpanı (Ek maliyet: {commonAreaPremiumPerM2.toLocaleString('tr-TR', { maximumFractionDigits: 0 })} ₺/m²)
                   </p>
                 </div>
 
@@ -376,15 +381,15 @@ export function CostPricingStep({
                   <h5 className="text-xs font-semibold text-blue-900">📊 Maliyet Önizleme</h5>
                   <div className="mt-2 space-y-1 text-xs text-blue-800">
                     <div className="flex justify-between">
-                      <span>Daire İç Mekan:</span>
+                      <span>Temel İnşaat Maliyeti ({grossArea.toLocaleString('tr-TR', { maximumFractionDigits: 0 })} m²):</span>
                       <span className="font-semibold">
-                        {unitInteriorCost.toLocaleString('tr-TR', { maximumFractionDigits: 0 })} ₺
+                        {baseConstructionCost.toLocaleString('tr-TR', { maximumFractionDigits: 0 })} ₺
                       </span>
                     </div>
                     <div className="flex justify-between">
-                      <span>+ Ortak Alanlar ({commonAreaM2.toFixed(0)} m² × {commonAreaCostPerM2.toLocaleString('tr-TR', { maximumFractionDigits: 0 })} ₺/m²):</span>
+                      <span>+ Ortak Alan Primi ({commonAreaM2.toFixed(0)} m² × {commonAreaPremiumPerM2.toLocaleString('tr-TR', { maximumFractionDigits: 0 })} ₺/m²):</span>
                       <span className="font-semibold">
-                        {commonAreaCost.toLocaleString('tr-TR', { maximumFractionDigits: 0 })} ₺
+                        {commonAreaPremium.toLocaleString('tr-TR', { maximumFractionDigits: 0 })} ₺
                       </span>
                     </div>
                     <div className="border-t border-blue-300 pt-1 mt-1 flex justify-between font-bold">
@@ -511,21 +516,16 @@ export function CostPricingStep({
       <div className="rounded-lg border border-green-200 bg-green-50 p-4">
         <div className="grid grid-cols-3 gap-4">
           <div>
-            <p className="text-xs font-medium text-green-700">💰 Toplam Maliyet</p>
+            <p className="text-xs font-medium text-green-700">💰 Toplam İnşaat Maliyeti</p>
             <p className="mt-1 text-2xl font-bold text-green-900">
               {totalConstructionCost.toLocaleString('tr-TR', { maximumFractionDigits: 0 })} ₺
             </p>
-            {includeCommonAreas ? (
-              <div className="mt-1 text-xs text-green-600 space-y-0.5">
-                <div>Daire İç: {unitInteriorCost.toLocaleString('tr-TR', { maximumFractionDigits: 0 })} ₺</div>
-                <div>Ortak Alan: {commonAreaCost.toLocaleString('tr-TR', { maximumFractionDigits: 0 })} ₺</div>
-                <div>({totalConstructionCostPerM2.toLocaleString('tr-TR', { maximumFractionDigits: 0 })} ₺/m² ort.)</div>
-              </div>
-            ) : (
-              <p className="mt-1 text-xs text-green-600">
-                ({totalConstructionCostPerM2.toLocaleString('tr-TR', { maximumFractionDigits: 0 })} ₺/m²)
-              </p>
-            )}
+            <div className="mt-1 text-xs text-green-600 space-y-0.5">
+              <div>{grossArea.toLocaleString('tr-TR', { maximumFractionDigits: 0 })} m² × {totalConstructionCostPerM2.toLocaleString('tr-TR', { maximumFractionDigits: 0 })} ₺/m²</div>
+              {includeCommonAreas && commonAreaPremium > 0 && (
+                <div className="text-green-500">+ Ortak alan primi: {commonAreaPremium.toLocaleString('tr-TR', { maximumFractionDigits: 0 })} ₺</div>
+              )}
+            </div>
           </div>
           <div>
             <p className="text-xs font-medium text-green-700">📈 Toplam Satış Geliri</p>
@@ -533,15 +533,15 @@ export function CostPricingStep({
               {totalRevenue.toLocaleString('tr-TR', { maximumFractionDigits: 0 })} ₺
             </p>
             <p className="mt-1 text-xs text-green-600">
-              (Ort: {averageRevenuePerM2.toLocaleString('tr-TR', { maximumFractionDigits: 0 })} ₺/m²)
+              NET {unitMix.totalNetArea.toLocaleString('tr-TR', { maximumFractionDigits: 0 })} m² × {averageRevenuePerM2.toLocaleString('tr-TR', { maximumFractionDigits: 0 })} ₺/m²
             </p>
           </div>
           <div>
-            <p className="text-xs font-medium text-green-700">💵 Net Kar</p>
-            <p className="mt-1 text-2xl font-bold text-green-900">
+            <p className="text-xs font-medium text-green-700">💵 Tahmini Kar</p>
+            <p className={`mt-1 text-2xl font-bold ${grossProfit >= 0 ? 'text-green-900' : 'text-red-600'}`}>
               {grossProfit.toLocaleString('tr-TR', { maximumFractionDigits: 0 })} ₺
             </p>
-            <p className="mt-1 text-xs text-green-600">
+            <p className={`mt-1 text-xs ${grossProfit >= 0 ? 'text-green-600' : 'text-red-500'}`}>
               Kar Marjı: {margin.toFixed(1)}%
             </p>
           </div>
