@@ -59,10 +59,16 @@ export function FinancialSummary({
   const [assumptions, setAssumptions] = useState<FinancialAssumptions>(DEFAULT_ASSUMPTIONS);
   const [showAssumptions, setShowAssumptions] = useState(false);
 
+  // Building cost conversion factor
+  // Interior finish cost × this factor = building average cost
+  // Building includes: parking (~8K TL/m²), common areas (~20K TL/m²), residential (~35K TL/m²)
+  // Professional standard: building average ≈ 50% of interior finish cost
+  const [buildingCostFactor, setBuildingCostFactor] = useState(0.50);
+
   // Calculate financial metrics on mount or when inputs change
   useEffect(() => {
     calculateFinancials();
-  }, [step1Data, step2Data, step3Data, assumptions]);
+  }, [step1Data, step2Data, step3Data, assumptions, buildingCostFactor]);
 
   /**
    * Calculate comprehensive financial analysis
@@ -71,12 +77,15 @@ export function FinancialSummary({
     setIsCalculating(true);
 
     try {
-      const { totalGrossArea } = step2Data;
       const { constructionCostPerM2, salePrices, landCost } = step3Data;
 
-      // Calculate total construction cost using GROSS area (you build the whole building)
-      // Revenue uses NET area (only sellable portions)
-      const totalConstructionCost = totalGrossArea * constructionCostPerM2;
+      // CRITICAL FIX: Use BUILDING TOTAL area for construction cost, not apartment gross
+      // Building total = parsel × KAKS × çıkma (includes all areas: apartments, parking, common)
+      // The constructionCostPerM2 is for finished interior, so we apply buildingCostFactor
+      // to get building-average cost (professional standard ≈ 50% of interior cost)
+      const buildingTotalArea = step1Data.zoningResult.toplamInsaatAlani;
+      const buildingAverageCostPerM2 = constructionCostPerM2 * buildingCostFactor;
+      const totalConstructionCost = buildingTotalArea * buildingAverageCostPerM2;
 
       // Phase 3.3: Include land cost in total project cost
       const landCostValue = landCost || 0;
@@ -165,9 +174,10 @@ export function FinancialSummary({
     );
   }
 
-  // Calculate per-m² values for display
-  const totalConstructionCostPerM2 = step2Data.totalNetArea > 0
-    ? financialResult.totalConstructionCost / step2Data.totalNetArea
+  // Calculate per-m² values for display (based on building total area)
+  const buildingTotalArea = step1Data.zoningResult.toplamInsaatAlani;
+  const totalConstructionCostPerM2 = buildingTotalArea > 0
+    ? financialResult.totalConstructionCost / buildingTotalArea
     : 0;
 
   return (
@@ -211,7 +221,13 @@ export function FinancialSummary({
             </span>
           </div>
           <div>
-            <span className="text-gray-500">Net Alan:</span>
+            <span className="text-gray-500">Toplam İnşaat:</span>
+            <span className="ml-2 font-semibold text-gray-900">
+              {step1Data.zoningResult.toplamInsaatAlani.toLocaleString('tr-TR', { maximumFractionDigits: 0 })} m²
+            </span>
+          </div>
+          <div>
+            <span className="text-gray-500">Satılabilir Net:</span>
             <span className="ml-2 font-semibold text-gray-900">
               {step1Data.zoningResult.netKullanimAlani.toLocaleString('tr-TR', { maximumFractionDigits: 0 })} m²
             </span>
@@ -246,16 +262,15 @@ export function FinancialSummary({
           <p className="mt-3 text-2xl font-bold text-gray-900">
             {financialResult.totalCost.toLocaleString('tr-TR', { maximumFractionDigits: 0 })} ₺
           </p>
-          {financialResult.landCost && financialResult.landCost > 0 ? (
-            <p className="mt-2 text-xs text-gray-500">
-              İnşaat {financialResult.totalConstructionCost.toLocaleString('tr-TR', { maximumFractionDigits: 0 })} ₺
-              + Arsa {financialResult.landCost.toLocaleString('tr-TR', { maximumFractionDigits: 0 })} ₺
+          <div className="mt-2 text-xs text-gray-500 space-y-0.5">
+            <p>
+              İnşaat: {financialResult.totalConstructionCost.toLocaleString('tr-TR', { maximumFractionDigits: 0 })} ₺
+              ({buildingTotalArea.toLocaleString('tr-TR', { maximumFractionDigits: 0 })} m² × {totalConstructionCostPerM2.toLocaleString('tr-TR', { maximumFractionDigits: 0 })} ₺/m²)
             </p>
-          ) : (
-            <p className="mt-2 text-xs text-gray-500">
-              ({totalConstructionCostPerM2.toLocaleString('tr-TR', { maximumFractionDigits: 0 })} ₺/m²)
-            </p>
-          )}
+            {financialResult.landCost && financialResult.landCost > 0 && (
+              <p>Arsa: {financialResult.landCost.toLocaleString('tr-TR', { maximumFractionDigits: 0 })} ₺</p>
+            )}
+          </div>
         </div>
         <div className="rounded-lg border-2 border-blue-300 bg-blue-50 p-6 shadow-sm">
           <p className="text-sm font-medium text-blue-700">📈 Toplam Satış Geliri</p>
@@ -393,6 +408,17 @@ export function FinancialSummary({
               max={5}
               decimals={1}
               description="NPV hesaplaması için aylık iskonto oranı"
+            />
+            <EditableParameter
+              label="Bina Maliyet Çarpanı"
+              value={buildingCostFactor * 100}
+              unit="%"
+              source="sektor"
+              onChange={(val) => setBuildingCostFactor(val / 100)}
+              min={40}
+              max={70}
+              decimals={0}
+              description="İç mekan maliyetinin yüzde kaçı bina ortalaması olarak kullanılır (otopark, ortak alan dahil). Profesyonel standart: %50"
             />
           </div>
         )}
