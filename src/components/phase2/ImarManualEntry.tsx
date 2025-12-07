@@ -102,12 +102,13 @@ export function ImarManualEntry({
     return null;
   }, [parselAlani, taks, kaks, cikmaKatsayisi, yencokOverride, hmaxOverride, validation.isValid]);
 
-  // Check if form is complete
-  const isComplete = validation.isValid && calculatedValues !== null;
+  // Check if form is complete (TAKS, KAKS, and Çıkma are all required)
+  const isComplete = validation.isValid && calculatedValues !== null && cikmaKatsayisi !== undefined;
 
   // Auto-submit when data is complete (Phase 3.3 UX improvement)
+  // Now requires TAKS, KAKS, AND Çıkma (all three are mandatory)
   useEffect(() => {
-    if (!isComplete || !taks || !kaks || !calculatedValues) {
+    if (!isComplete || !taks || !kaks || !cikmaKatsayisi || !calculatedValues) {
       return;
     }
 
@@ -260,7 +261,7 @@ export function ImarManualEntry({
               required
             />
 
-            {/* Çıkma Katsayısı (Optional) */}
+            {/* Çıkma Katsayısı (Required - varies by parcel) */}
             <DecimalInput
               value={cikmaKatsayisi ?? null}
               onChange={(val) => setCikmaKatsayisi(val ?? undefined)}
@@ -268,9 +269,10 @@ export function ImarManualEntry({
               max={IMAR_VALIDATION.cikmaKatsayisi.max}
               step={IMAR_VALIDATION.cikmaKatsayisi.step}
               placeholder="örn: 1.60"
-              label="Çıkma Katsayısı (Opsiyonel)"
-              error={validation.errors.find(e => e.message.includes('katsayı'))?.message}
+              label="Çıkma Katsayısı"
+              error={validation.errors.find(e => e.message.includes('katsayı') || e.message.includes('Çıkma'))?.message}
               disabled={isLoading}
+              required
             />
           </div>
         </div>

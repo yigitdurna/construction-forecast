@@ -20,7 +20,7 @@ export interface ImarUserInputs {
   parselAlani: number;      // m² - Parcel area
   taks: number;             // 0.01 - 1.00 - Building Coverage Ratio
   kaks: number;             // 0.01 - 10.00 - Floor Area Ratio (Emsal)
-  cikmaKatsayisi?: number;  // 1.0 - 2.0 - Projection coefficient for balconies
+  cikmaKatsayisi: number;   // 1.0 - 2.0 - Projection coefficient (REQUIRED - varies by parcel)
   yencokOverride?: number;  // Optional: if belediye specifies max floors
   hmaxOverride?: number;    // Optional: if belediye specifies max height (meters)
 }

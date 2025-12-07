@@ -9,6 +9,7 @@ import { useFeasibility } from '../../context/FeasibilityContext';
 import { useProjectStorage } from '../../hooks/useProjectStorage';
 import { wizardStateToProject } from '../../utils/projectConverter';
 import { generateFeasibilityPDF } from '../../services/pdfExport';
+import { EditableParameter } from '../ui/EditableParameter';
 import type {
   ParselImarData,
   UnitMix,
@@ -16,6 +17,19 @@ import type {
   FinancialResult,
 } from '../../types/feasibility';
 import { WIZARD_TEXT } from '../../types/feasibility';
+
+// Financial calculation assumptions (editable by user)
+interface FinancialAssumptions {
+  projectDuration: number;   // months
+  npvDiscountRate: number;   // monthly rate (e.g., 0.01 = 1%)
+  salesPeriod: number;       // months after construction to sell
+}
+
+const DEFAULT_ASSUMPTIONS: FinancialAssumptions = {
+  projectDuration: 18,       // 18 months construction
+  npvDiscountRate: 0.01,     // 1% monthly
+  salesPeriod: 6,            // 6 months to sell after completion
+};
 
 export interface FinancialSummaryProps {
   step1Data: ParselImarData;
@@ -41,10 +55,14 @@ export function FinancialSummary({
   const [isCalculating, setIsCalculating] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
 
+  // Editable financial assumptions
+  const [assumptions, setAssumptions] = useState<FinancialAssumptions>(DEFAULT_ASSUMPTIONS);
+  const [showAssumptions, setShowAssumptions] = useState(false);
+
   // Calculate financial metrics on mount or when inputs change
   useEffect(() => {
     calculateFinancials();
-  }, [step1Data, step2Data, step3Data]);
+  }, [step1Data, step2Data, step3Data, assumptions]);
 
   /**
    * Calculate comprehensive financial analysis
@@ -53,12 +71,12 @@ export function FinancialSummary({
     setIsCalculating(true);
 
     try {
-      const { totalNetArea } = step2Data; // USE NET AREA for both cost and revenue
+      const { totalGrossArea } = step2Data;
       const { constructionCostPerM2, salePrices, landCost } = step3Data;
 
-      // Calculate total construction cost (FIXED: use NET area, not GROSS)
-      // Per user requirement: "for simplicity, this app uses NET usable area for both"
-      const totalConstructionCost = totalNetArea * constructionCostPerM2;
+      // Calculate total construction cost using GROSS area (you build the whole building)
+      // Revenue uses NET area (only sellable portions)
+      const totalConstructionCost = totalGrossArea * constructionCostPerM2;
 
       // Phase 3.3: Include land cost in total project cost
       const landCostValue = landCost || 0;
@@ -76,12 +94,11 @@ export function FinancialSummary({
       const profitMargin = totalRevenue > 0 ? grossProfit / totalRevenue : 0;
       const roi = totalCost > 0 ? (grossProfit / totalCost) * 100 : 0;
 
-      // Estimate timeline for NPV calculation (simplified)
-      // For apartments: 18 months construction + 6 months to sell
-      const totalMonths = 24;
+      // Use editable assumptions for NPV calculation
+      const totalMonths = assumptions.projectDuration + assumptions.salesPeriod;
 
-      // NPV-adjusted revenue (1% monthly discount rate)
-      const discountRate = 0.01;
+      // NPV-adjusted revenue using user-configurable discount rate
+      const discountRate = assumptions.npvDiscountRate;
       const npvAdjustedRevenue = totalRevenue / Math.pow(1 + discountRate, totalMonths);
       const npvProfit = npvAdjustedRevenue - totalCost;
       const npvROI = totalCost > 0 ? (npvProfit / totalCost) * 100 : 0;
@@ -163,6 +180,63 @@ export function FinancialSummary({
         <p className="mt-1 text-sm text-gray-600">
           Proje finansal özeti - Tüm değerler zaman değeri (NPV) ile düzeltilmiştir.
         </p>
+      </div>
+
+      {/* Step 1 Data Summary - Phase 3.3 Fix: Show parsel/İmar data for transparency */}
+      <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
+        <h4 className="text-sm font-semibold text-gray-700 mb-3">📋 Proje Özeti</h4>
+        <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm sm:grid-cols-4">
+          <div>
+            <span className="text-gray-500">Parsel Alanı:</span>
+            <span className="ml-2 font-semibold text-gray-900">
+              {step1Data.parselData.parselAlani.toLocaleString('tr-TR')} m²
+            </span>
+          </div>
+          <div>
+            <span className="text-gray-500">TAKS:</span>
+            <span className="ml-2 font-semibold text-gray-900">
+              {step1Data.imarParams.taks.toFixed(2)}
+            </span>
+          </div>
+          <div>
+            <span className="text-gray-500">KAKS:</span>
+            <span className="ml-2 font-semibold text-gray-900">
+              {step1Data.imarParams.kaks.toFixed(2)}
+            </span>
+          </div>
+          <div>
+            <span className="text-gray-500">Çıkma:</span>
+            <span className="ml-2 font-semibold text-gray-900">
+              {(step1Data.imarParams.cikmaKatsayisi ?? 1.0).toFixed(2)}
+            </span>
+          </div>
+          <div>
+            <span className="text-gray-500">Net Alan:</span>
+            <span className="ml-2 font-semibold text-gray-900">
+              {step1Data.zoningResult.netKullanimAlani.toLocaleString('tr-TR', { maximumFractionDigits: 0 })} m²
+            </span>
+          </div>
+          <div>
+            <span className="text-gray-500">Toplam Daire:</span>
+            <span className="ml-2 font-semibold text-gray-900">
+              {step2Data.totalUnits} adet
+            </span>
+          </div>
+          <div>
+            <span className="text-gray-500">İnşaat Maliyeti:</span>
+            <span className="ml-2 font-semibold text-gray-900">
+              {step3Data.constructionCostPerM2.toLocaleString('tr-TR', { maximumFractionDigits: 0 })} ₺/m²
+            </span>
+          </div>
+          {step3Data.landCost && step3Data.landCost > 0 && (
+            <div>
+              <span className="text-gray-500">Arsa Maliyeti:</span>
+              <span className="ml-2 font-semibold text-gray-900">
+                {step3Data.landCost.toLocaleString('tr-TR', { maximumFractionDigits: 0 })} ₺
+              </span>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Key Metrics Summary - BIG 4-CARD DISPLAY */}
@@ -252,16 +326,76 @@ export function FinancialSummary({
           <div className="flex justify-between border-b border-gray-200 pb-2">
             <span className="text-sm text-gray-600">Proje Süresi</span>
             <span className="font-mono text-sm font-semibold text-gray-900">
-              24 ay
+              {assumptions.projectDuration + assumptions.salesPeriod} ay
             </span>
           </div>
           <div className="flex justify-between border-b border-gray-200 pb-2">
             <span className="text-sm text-gray-600">NPV İskonto Oranı</span>
             <span className="font-mono text-sm font-semibold text-gray-900">
-              1% / ay
+              {(assumptions.npvDiscountRate * 100).toFixed(0)}% / ay
             </span>
           </div>
         </div>
+      </div>
+
+      {/* Editable Assumptions Section */}
+      <div className="rounded-lg border border-gray-200 bg-white">
+        <button
+          onClick={() => setShowAssumptions(!showAssumptions)}
+          className="w-full flex items-center justify-between p-4 text-left hover:bg-gray-50"
+        >
+          <span className="text-sm font-semibold text-gray-700">
+            ⚙️ Hesaplama Parametreleri
+          </span>
+          <svg
+            className={`h-5 w-5 text-gray-500 transition-transform ${showAssumptions ? 'rotate-180' : ''}`}
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+          </svg>
+        </button>
+        {showAssumptions && (
+          <div className="border-t border-gray-200 p-4 space-y-1">
+            <p className="text-xs text-gray-500 mb-3">
+              Bu parametreleri değiştirerek farklı senaryoları test edebilirsiniz.
+            </p>
+            <EditableParameter
+              label="İnşaat Süresi"
+              value={assumptions.projectDuration}
+              unit="ay"
+              source="default"
+              onChange={(val) => setAssumptions(prev => ({ ...prev, projectDuration: val }))}
+              min={6}
+              max={60}
+              decimals={0}
+              description="İnşaatın tamamlanması için gereken süre"
+            />
+            <EditableParameter
+              label="Satış Süresi"
+              value={assumptions.salesPeriod}
+              unit="ay"
+              source="default"
+              onChange={(val) => setAssumptions(prev => ({ ...prev, salesPeriod: val }))}
+              min={1}
+              max={24}
+              decimals={0}
+              description="İnşaat bitiminden satışa kadar geçen süre"
+            />
+            <EditableParameter
+              label="Aylık İskonto Oranı"
+              value={assumptions.npvDiscountRate * 100}
+              unit="%"
+              source="default"
+              onChange={(val) => setAssumptions(prev => ({ ...prev, npvDiscountRate: val / 100 }))}
+              min={0.5}
+              max={5}
+              decimals={1}
+              description="NPV hesaplaması için aylık iskonto oranı"
+            />
+          </div>
+        )}
       </div>
 
       {/* NPV Explanation */}

@@ -24,8 +24,8 @@ export type { ParselLookupWithImarProps } from './ParselLookupWithImar';
 export { StepIndicator } from './StepIndicator';
 export type { StepIndicatorProps } from './StepIndicator';
 
-export { UnitMixEditor } from './UnitMixEditor';
-export type { UnitMixEditorProps } from './UnitMixEditor';
+export { UnitMixEditorDynamic as UnitMixEditor } from './UnitMixEditorDynamic';
+export type { UnitMixEditorDynamicProps as UnitMixEditorProps } from './UnitMixEditorDynamic';
 
 export { CostPricingStep } from './CostPricingStep';
 export type { CostPricingStepProps } from './CostPricingStep';

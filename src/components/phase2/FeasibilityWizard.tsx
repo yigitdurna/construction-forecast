@@ -161,6 +161,7 @@ export function FeasibilityWizard(): JSX.Element {
         }
         return (
           <CostPricingStep
+            step1Data={step1}
             unitMix={step2}
             district={step1.parselData.ilce}
             onPricingChange={handleStep3Update}

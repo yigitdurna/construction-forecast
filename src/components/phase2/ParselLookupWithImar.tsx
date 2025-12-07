@@ -10,7 +10,7 @@
  * This is the main entry point for Phase 2 workflow
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { ImarManualEntry } from './ImarManualEntry';
 import { BodrumConfigPanel } from './BodrumConfigPanel';
 import { calculateZoning } from '../../services/zoningCalculator';
@@ -92,8 +92,10 @@ export function ParselLookupWithImar({
   /**
    * Handle İmar submission
    * Store imar data and proceed to bodrum config
+   * IMPORTANT: Wrapped in useCallback to prevent infinite re-render loops
+   * (ImarManualEntry's auto-submit useEffect has onSubmit in dependencies)
    */
-  const handleImarSubmit = (imarDataInput: ImarData) => {
+  const handleImarSubmit = useCallback((imarDataInput: ImarData) => {
     if (!parselAlani) {
       return;
     }
@@ -103,14 +105,15 @@ export function ParselLookupWithImar({
     setTabanAlani(imarDataInput.calculated.tabanAlani);
 
     // No need to change step - bodrum config appears inline
-  };
+  }, [parselAlani]);
 
   /**
    * Handle final submission after bodrum config
    * Calculate zoning and pass to parent
    * Phase 3.2: Integrate bodrum-aware area calculations
+   * IMPORTANT: Wrapped in useCallback to be a stable dependency for the auto-submit useEffect
    */
-  const handleFinalSubmit = () => {
+  const handleFinalSubmit = useCallback(() => {
     if (!parselAlani || !imarData) {
       return;
     }
@@ -158,7 +161,7 @@ export function ParselLookupWithImar({
     });
 
     setStep('complete');
-  };
+  }, [parselAlani, imarData, bodrumConfig, onComplete]);
 
   /**
    * Auto-submit when imar data is complete (Phase 3.3 UX improvement)
@@ -175,7 +178,7 @@ export function ParselLookupWithImar({
     }, 300);
 
     return () => clearTimeout(timer);
-  }, [imarData, bodrumConfig]); // Re-run when bodrum config changes
+  }, [imarData, bodrumConfig, handleFinalSubmit, step, parselAlani]);
 
   // Step 1: Ada/Parsel input form
   if (step === 'input') {

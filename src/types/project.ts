@@ -27,6 +27,7 @@ export interface FeasibilityProject {
     taks: number;
     kaks: number;
     katAdedi: number;
+    cikmaKatsayisi: number; // Phase 1: Now required
   };
   zoning: {
     tabanAlani: number; // m²
@@ -129,6 +130,7 @@ export function createEmptyProject(input?: CreateProjectInput): FeasibilityProje
       taks: 0,
       kaks: 0,
       katAdedi: 0,
+      cikmaKatsayisi: 0, // Required - user must enter
     },
     zoning: {
       tabanAlani: 0,

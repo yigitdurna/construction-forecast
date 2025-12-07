@@ -15,7 +15,7 @@ export interface ManualImarParams {
   taks: number;      // Taban Alanı Kat Sayısı (Building Coverage Ratio) - MANUAL INPUT
   kaks: number;      // Kat Alanı Kat Sayısı (Floor Area Ratio = EMSAL) - MANUAL INPUT
   katAdedi: number;  // Kat Adedi (Number of floors) - CALCULATED (KAKS/TAKS)
-  cikmaKatsayisi?: number;  // Çıkma Katsayısı (Projection coefficient) - OPTIONAL MANUAL INPUT
+  cikmaKatsayisi: number;  // Çıkma Katsayısı (Projection coefficient) - REQUIRED (varies by parcel)
 }
 
 /**
@@ -83,7 +83,7 @@ export function validateImarParams(
   const errors: ValidationError[] = [];
   const warnings: string[] = [];
 
-  // Check required fields (TAKS and KAKS only)
+  // Check required fields (TAKS, KAKS, and Çıkma)
   if (params.taks === undefined || params.taks === null) {
     errors.push({
       field: 'taks',
@@ -97,6 +97,14 @@ export function validateImarParams(
       field: 'kaks',
       message: IMAR_ERRORS.kaksRequired,
       code: 'kaks_required',
+    });
+  }
+
+  if (params.cikmaKatsayisi === undefined || params.cikmaKatsayisi === null) {
+    errors.push({
+      field: 'cikmaKatsayisi',
+      message: IMAR_ERRORS.cikmaRequired,
+      code: 'cikma_required',
     });
   }
 
@@ -167,24 +175,22 @@ export function validateImarParams(
     }
   }
 
-  // Validate Çıkma Katsayısı (optional)
-  if (cikmaKatsayisi !== undefined) {
-    if (isNaN(cikmaKatsayisi) || !isFinite(cikmaKatsayisi)) {
-      errors.push({
-        field: 'cikmaKatsayisi',
-        message: IMAR_ERRORS.invalidNumber,
-        code: 'cikma_invalid_number',
-      });
-    } else if (
-      cikmaKatsayisi < IMAR_LIMITS.cikmaKatsayisi.min ||
-      cikmaKatsayisi > IMAR_LIMITS.cikmaKatsayisi.max
-    ) {
-      errors.push({
-        field: 'cikmaKatsayisi',
-        message: IMAR_ERRORS.cikmaOutOfRange,
-        code: 'cikma_out_of_range',
-      });
-    }
+  // Validate Çıkma Katsayısı (required)
+  if (isNaN(cikmaKatsayisi) || !isFinite(cikmaKatsayisi)) {
+    errors.push({
+      field: 'cikmaKatsayisi',
+      message: IMAR_ERRORS.invalidNumber,
+      code: 'cikma_invalid_number',
+    });
+  } else if (
+    cikmaKatsayisi < IMAR_LIMITS.cikmaKatsayisi.min ||
+    cikmaKatsayisi > IMAR_LIMITS.cikmaKatsayisi.max
+  ) {
+    errors.push({
+      field: 'cikmaKatsayisi',
+      message: IMAR_ERRORS.cikmaOutOfRange,
+      code: 'cikma_out_of_range',
+    });
   }
 
   // Cross-validation: KAKS should be >= TAKS for multi-story buildings
@@ -276,7 +282,7 @@ export function parseImarValue(input: string): number {
 /**
  * Checks if manual İmar params are complete
  *
- * Only TAKS and KAKS are required inputs (katAdedi is calculated)
+ * TAKS, KAKS, and Çıkma are all required inputs (katAdedi is calculated)
  *
  * @param params - Partial manual İmar params
  * @returns True if all required fields are present
@@ -290,7 +296,10 @@ export function isImarComplete(
     !isNaN(params.taks) &&
     params.kaks !== undefined &&
     params.kaks !== null &&
-    !isNaN(params.kaks)
+    !isNaN(params.kaks) &&
+    params.cikmaKatsayisi !== undefined &&
+    params.cikmaKatsayisi !== null &&
+    !isNaN(params.cikmaKatsayisi)
   );
 }
 

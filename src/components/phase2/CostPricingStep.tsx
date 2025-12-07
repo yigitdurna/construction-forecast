@@ -10,11 +10,13 @@ import type {
   PricingConfig,
   UnitTypeCode,
   UnitPricing,
+  ParselImarData,
 } from '../../types/feasibility';
 import { QUALITY_TIERS, WIZARD_TEXT } from '../../types/feasibility';
 import { CostBreakdownEditor, CostBreakdownData } from './CostBreakdownEditor';
 
 export interface CostPricingStepProps {
+  step1Data: ParselImarData;
   unitMix: UnitMix;
   district: string;
   onPricingChange: (pricing: PricingConfig) => void;
@@ -52,6 +54,7 @@ const UNIT_PRICE_MULTIPLIERS: Record<UnitTypeCode, number> = {
  * CostPricingStep Component
  */
 export function CostPricingStep({
+  step1Data,
   unitMix,
   district,
   onPricingChange,
@@ -207,6 +210,61 @@ export function CostPricingStep({
         <p className="mt-1 text-sm text-gray-600">
           {WIZARD_TEXT.step3.description}
         </p>
+      </div>
+
+      {/* Step 1 Data Summary - Phase 3.3 Fix: Show parsel/İmar data for transparency */}
+      <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
+        <h4 className="text-sm font-semibold text-gray-700 mb-3">📋 Proje Bilgileri</h4>
+        <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm sm:grid-cols-4">
+          <div>
+            <span className="text-gray-500">Parsel Alanı:</span>
+            <span className="ml-2 font-semibold text-gray-900">
+              {step1Data.parselData.parselAlani.toLocaleString('tr-TR')} m²
+            </span>
+          </div>
+          <div>
+            <span className="text-gray-500">TAKS:</span>
+            <span className="ml-2 font-semibold text-gray-900">
+              {step1Data.imarParams.taks.toFixed(2)}
+            </span>
+          </div>
+          <div>
+            <span className="text-gray-500">KAKS:</span>
+            <span className="ml-2 font-semibold text-gray-900">
+              {step1Data.imarParams.kaks.toFixed(2)}
+            </span>
+          </div>
+          <div>
+            <span className="text-gray-500">Çıkma:</span>
+            <span className="ml-2 font-semibold text-gray-900">
+              {(step1Data.imarParams.cikmaKatsayisi ?? 1.0).toFixed(2)}
+            </span>
+          </div>
+          <div>
+            <span className="text-gray-500">Toplam İnşaat:</span>
+            <span className="ml-2 font-semibold text-gray-900">
+              {step1Data.zoningResult.toplamInsaatAlani.toLocaleString('tr-TR', { maximumFractionDigits: 0 })} m²
+            </span>
+          </div>
+          <div>
+            <span className="text-gray-500">Net Alan:</span>
+            <span className="ml-2 font-semibold text-gray-900">
+              {step1Data.zoningResult.netKullanimAlani.toLocaleString('tr-TR', { maximumFractionDigits: 0 })} m²
+            </span>
+          </div>
+          <div>
+            <span className="text-gray-500">Toplam Daire:</span>
+            <span className="ml-2 font-semibold text-gray-900">
+              {unitMix.totalUnits} adet
+            </span>
+          </div>
+          <div>
+            <span className="text-gray-500">İlçe:</span>
+            <span className="ml-2 font-semibold text-gray-900 capitalize">
+              {district}
+            </span>
+          </div>
+        </div>
       </div>
 
       {/* Cost Breakdown Editor - Expandable Categories */}

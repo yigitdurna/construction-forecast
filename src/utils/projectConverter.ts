@@ -39,11 +39,13 @@ export function wizardStateToProject(
         taks: state.step1.imarParams.taks,
         kaks: state.step1.imarParams.kaks,
         katAdedi: state.step1.imarParams.katAdedi,
+        cikmaKatsayisi: state.step1.imarParams.cikmaKatsayisi || 1.0,
       }
     : existingProject?.imar || {
         taks: 0,
         kaks: 0,
         katAdedi: 0,
+        cikmaKatsayisi: 0,
       };
 
   // Extract zoning data from step 1
@@ -186,6 +188,7 @@ export function projectToWizardState(
           taks: project.imar.taks,
           kaks: project.imar.kaks,
           katAdedi: project.imar.katAdedi,
+          cikmaKatsayisi: project.imar.cikmaKatsayisi || 1.0,
         },
         zoningResult: {
           parselAlani: project.parsel.alan,
